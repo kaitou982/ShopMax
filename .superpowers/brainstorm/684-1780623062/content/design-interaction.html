@@ -1,0 +1,191 @@
+<h2>设计 · WebSocket 互动系统</h2>
+<p class="subtitle">弹幕 / 点赞 / 礼物 / 进出提示 — 实时双向通信</p>
+
+<div class="section">
+  <h3>WebSocket 消息协议</h3>
+  <div class="mockup">
+    <div class="mockup-header">统一消息格式</div>
+    <div class="mockup-body" style="font-size: 12px; font-family: monospace; padding: 16px; background: #1a1a2e;">
+      <pre style="margin: 0; color: #e0e0e0; line-height: 1.8;">
+<span style="color: #888;">// 所有消息统一格式</span>
+{
+  <span style="color: #66bb6a;">"type"</span>: <span style="color: #ffa726;">"danmaku" | "like" | "gift" | "enter" | "leave" | "product" | "system"</span>,
+  <span style="color: #66bb6a;">"data"</span>: { ... },    <span style="color: #888;">// 业务数据</span>
+  <span style="color: #66bb6a;">"timestamp"</span>: <span style="color: #ffa726;">1717584000000</span>
+}
+
+<span style="color: #888;">// 客户端 → 服务器</span>
+{ <span style="color: #66bb6a;">"type"</span>: <span style="color: #ffa726;">"danmaku"</span>,  <span style="color: #66bb6a;">"data"</span>: { <span style="color: #66bb6a;">"content"</span>: <span style="color: #ffa726;">"好看！"</span> } }
+{ <span style="color: #66bb6a;">"type"</span>: <span style="color: #ffa726;">"like"</span>,     <span style="color: #66bb6a;">"data"</span>: {} }
+{ <span style="color: #66bb6a;">"type"</span>: <span style="color: #ffa726;">"gift"</span>,     <span style="color: #66bb6a;">"data"</span>: { <span style="color: #66bb6a;">"giftId"</span>: <span style="color: #ffa726;">1</span>, <span style="color: #66bb6a;">"count"</span>: <span style="color: #ffa726;">1</span> } }
+
+<span style="color: #888;">// 服务器 → 客户端（广播）</span>
+{ <span style="color: #66bb6a;">"type"</span>: <span style="color: #ffa726;">"danmaku"</span>,  <span style="color: #66bb6a;">"data"</span>: { <span style="color: #66bb6a;">"userId"</span>: <span style="color: #ffa726;">1001</span>, <span style="color: #66bb6a;">"nickname"</span>: <span style="color: #ffa726;">"小明"</span>, <span style="color: #66bb6a;">"avatar"</span>: <span style="color: #ffa726;">"..."</span>, <span style="color: #66bb6a;">"content"</span>: <span style="color: #ffa726;">"好看！"</span> } }
+{ <span style="color: #66bb6a;">"type"</span>: <span style="color: #ffa726;">"online"</span>,   <span style="color: #66bb6a;">"data"</span>: { <span style="color: #66bb6a;">"count"</span>: <span style="color: #ffa726;">1234</span> } }
+{ <span style="color: #66bb6a;">"type"</span>: <span style="color: #ffa726;">"product"</span>,  <span style="color: #66bb6a;">"data"</span>: { <span style="color: #66bb6a;">"productId"</span>: <span style="color: #ffa726;">501</span>, <span style="color: #66bb6a;">"action"</span>: <span style="color: #ffa726;">"highlight"</span> } }</pre>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>弹幕系统</h3>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+    <div style="background: rgba(255,255,255,0.05); padding: 16px; border-radius: 8px;">
+      <h4 style="color: #4fc3f7; margin: 0 0 12px 0;">后端处理流程</h4>
+      <ol style="margin: 0; padding-left: 20px; font-size: 13px;">
+        <li>接收弹幕消息</li>
+        <li>Redis 限频检查（<code>live:danmaku:{roomId}:{uid}</code>，TTL 2s）</li>
+        <li>敏感词过滤（内置词库 + Redis 缓存）</li>
+        <li>内容截断（最长 200 字）</li>
+        <li>持久化到 <code>lms_live_message</code></li>
+        <li>广播给房间所有连接</li>
+      </ol>
+    </div>
+    <div style="background: rgba(255,255,255,0.05); padding: 16px; border-radius: 8px;">
+      <h4 style="color: #66bb6a; margin: 0 0 12px 0;">前端弹幕渲染</h4>
+      <ul style="margin: 0; padding-left: 20px; font-size: 13px;">
+        <li><strong>轨道模式</strong>：3~5 条水平轨道，弹幕从右向左滚动</li>
+        <li><strong>防重叠</strong>：新弹幕选择最空闲的轨道</li>
+        <li><strong>队列管理</strong>：高频时丢弃旧弹幕，保证流畅</li>
+        <li><strong>样式</strong>：白色文字 + 半透明背景 + 圆角</li>
+        <li><strong>入场动画</strong>：从右侧滑入，8 秒后淡出</li>
+      </ul>
+    </div>
+  </div>
+  <div class="mockup" style="margin-top: 12px;">
+    <div class="mockup-header">弹幕轨道渲染示意</div>
+    <div class="mockup-body" style="padding: 16px; background: #0a0a1a; height: 100px; position: relative; overflow: hidden;">
+      <div style="position: absolute; top: 10px; left: 0; right: 0; height: 20px;">
+        <div style="position: absolute; right: 20px; background: rgba(0,0,0,0.4); padding: 2px 8px; border-radius: 10px; color: #fff; font-size: 11px; white-space: nowrap;">
+          <span style="color: #4fc3f7;">用户A:</span> 这个颜色好看！
+        </div>
+      </div>
+      <div style="position: absolute; top: 35px; left: 0; right: 0; height: 20px;">
+        <div style="position: absolute; right: 100px; background: rgba(0,0,0,0.4); padding: 2px 8px; border-radius: 10px; color: #fff; font-size: 11px; white-space: nowrap;">
+          <span style="color: #ffa726;">用户B:</span> 多少钱？
+        </div>
+      </div>
+      <div style="position: absolute; top: 60px; left: 0; right: 0; height: 20px;">
+        <div style="position: absolute; right: 50px; background: rgba(0,0,0,0.4); padding: 2px 8px; border-radius: 10px; color: #fff; font-size: 11px; white-space: nowrap;">
+          <span style="color: #66bb6a;">用户C:</span> 已下单！主播加油 🔥
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>点赞系统</h3>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; font-size: 13px;">
+    <div style="background: rgba(255,255,255,0.05); padding: 16px; border-radius: 8px;">
+      <h4 style="color: #ef5350; margin: 0 0 8px 0;">后端策略</h4>
+      <pre style="margin: 0; font-size: 11px; font-family: monospace; color: #e0e0e0; line-height: 1.6;">
+<span style="color: #888;">// 收到点赞 → Redis 原子递增</span>
+INCR live:room:{roomId}:likes
+
+<span style="color: #888;">// 每 10 次批量持久化到 DB</span>
+<span style="color: #4fc3f7;">if</span> (count % 10 == 0) {
+    UPDATE lms_live_room
+    SET like_count = like_count + 10
+    WHERE id = roomId
+}
+
+<span style="color: #888;">// 每 100 次广播一次总数更新</span>
+<span style="color: #4fc3f7;">if</span> (count % 100 == 0) {
+    broadcast({ type: <span style="color: #66bb6a;">"like_count"</span>, data: { count } })
+}</pre>
+    </div>
+    <div style="background: rgba(255,255,255,0.05); padding: 16px; border-radius: 8px;">
+      <h4 style="color: #ef5350; margin: 0 0 8px 0;">前端动画</h4>
+      <ul style="margin: 0; padding-left: 20px;">
+        <li>点击爱心按钮 → 触发粒子爆炸动画</li>
+        <li>3~5 个心形粒子随机方向飞出 + 缩放 + 淡出</li>
+        <li>持续时间 0.8~1.2 秒</li>
+        <li>连点时动画叠加，不阻塞</li>
+        <li>不发送 WebSocket 消息（纯前端效果）</li>
+        <li>后端只记录计数，不广播每个点赞</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>礼物系统</h3>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+    <div style="background: rgba(255,255,255,0.05); padding: 16px; border-radius: 8px;">
+      <h4 style="color: #ffa726; margin: 0 0 12px 0;">礼物数据模型</h4>
+      <pre style="margin: 0; font-size: 11px; font-family: monospace; color: #e0e0e0; line-height: 1.8;">
+<span style="color: #888;">-- 礼物配置表（新增）</span>
+<span style="color: #4fc3f7;">CREATE TABLE</span> lms_gift (
+    id          <span style="color: #ffa726;">BIGINT</span> PRIMARY KEY AUTO_INCREMENT,
+    name        <span style="color: #ffa726;">VARCHAR</span>(32)  <span style="color: #888;">-- 礼物名称</span>,
+    icon        <span style="color: #ffa726;">VARCHAR</span>(255) <span style="color: #888;">-- 图标 URL</span>,
+    animation   <span style="color: #ffa726;">VARCHAR</span>(255) <span style="color: #888;">-- 动画资源 URL (Lottie/GIF)</span>,
+    price       <span style="color: #ffa726;">INT</span>          <span style="color: #888;">-- 虚拟币价格</span>,
+    sort_order  <span style="color: #ffa726;">INT</span> DEFAULT 0,
+    create_time <span style="color: #ffa726;">DATETIME</span>,
+    update_time <span style="color: #ffa726;">DATETIME</span>,
+    deleted     <span style="color: #ffa726;">TINYINT</span> DEFAULT 0
+);
+
+<span style="color: #888;">-- 用户虚拟币（新增字段到 ums_user）</span>
+ALTER TABLE ums_user
+ADD COLUMN <span style="color: #ffa726;">coin_balance</span> <span style="color: #ffa726;">INT</span> DEFAULT 0;</pre>
+    </div>
+    <div style="background: rgba(255,255,255,0.05); padding: 16px; border-radius: 8px;">
+      <h4 style="color: #ffa726; margin: 0 0 12px 0;">送礼流程</h4>
+      <ol style="margin: 0; padding-left: 20px; font-size: 13px;">
+        <li>用户点击礼物 → 前端展示礼物面板</li>
+        <li>选择礼物 + 数量 → 确认发送</li>
+        <li>WebSocket 发送 <code>{ type: "gift", data: { giftId, count } }</code></li>
+        <li>后端校验：余额是否充足</li>
+        <li>扣减虚拟币（Redis 原子操作）</li>
+        <li>记录消息到 <code>lms_live_message</code></li>
+        <li>广播给房间所有人（含礼物动画资源 URL）</li>
+        <li>前端播放礼物动画（Lottie 全屏特效）</li>
+      </ol>
+    </div>
+  </div>
+  <div class="mockup" style="margin-top: 12px;">
+    <div class="mockup-header">礼物面板 UI（抖音风格）</div>
+    <div class="mockup-body" style="padding: 16px; background: #1a1a2e;">
+      <div style="background: rgba(0,0,0,0.6); backdrop-filter: blur(10px); border-radius: 16px; padding: 16px; max-width: 360px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <span style="font-size: 13px; color: #fff; font-weight: 600;">🎁 送礼物</span>
+          <span style="font-size: 11px; color: #ffa726;">💰 余额: 1,280 币</span>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
+          <div style="text-align: center; cursor: pointer;">
+            <div style="width: 48px; height: 48px; margin: 0 auto; background: rgba(255,255,255,0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px; border: 2px solid transparent;">🌹</div>
+            <div style="font-size: 10px; color: #aaa; margin-top: 4px;">玫瑰</div>
+            <div style="font-size: 10px; color: #ffa726;">10 币</div>
+          </div>
+          <div style="text-align: center; cursor: pointer;">
+            <div style="width: 48px; height: 48px; margin: 0 auto; background: rgba(255,255,255,0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px; border: 2px solid transparent;">🎸</div>
+            <div style="font-size: 10px; color: #aaa; margin-top: 4px;">吉他</div>
+            <div style="font-size: 10px; color: #ffa726;">50 币</div>
+          </div>
+          <div style="text-align: center; cursor: pointer;">
+            <div style="width: 48px; height: 48px; margin: 0 auto; background: rgba(255,255,255,0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px; border: 2px solid #ffa726;">🚀</div>
+            <div style="font-size: 10px; color: #aaa; margin-top: 4px;">火箭</div>
+            <div style="font-size: 10px; color: #ffa726;">200 币</div>
+          </div>
+          <div style="text-align: center; cursor: pointer;">
+            <div style="width: 48px; height: 48px; margin: 0 auto; background: rgba(255,255,255,0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px; border: 2px solid transparent;">💎</div>
+            <div style="font-size: 10px; color: #aaa; margin-top: 4px;">钻石</div>
+            <div style="font-size: 10px; color: #ffa726;">500 币</div>
+          </div>
+        </div>
+        <div style="margin-top: 12px; display: flex; gap: 8px; align-items: center;">
+          <div style="display: flex; gap: 4px;">
+            <span style="background: rgba(255,255,255,0.1); padding: 4px 10px; border-radius: 12px; font-size: 11px; color: #fff;">x1</span>
+            <span style="background: rgba(255,255,255,0.1); padding: 4px 10px; border-radius: 12px; font-size: 11px; color: #aaa;">x10</span>
+            <span style="background: rgba(255,255,255,0.1); padding: 4px 10px; border-radius: 12px; font-size: 11px; color: #aaa;">x66</span>
+            <span style="background: rgba(255,255,255,0.1); padding: 4px 10px; border-radius: 12px; font-size: 11px; color: #aaa;">x99</span>
+          </div>
+          <button style="margin-left: auto; background: linear-gradient(135deg, #ff6b6b, #ffa726); border: none; color: #fff; padding: 6px 20px; border-radius: 16px; font-size: 12px; font-weight: 600;">赠送</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

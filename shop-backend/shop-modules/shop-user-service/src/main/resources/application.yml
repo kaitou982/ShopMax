@@ -1,0 +1,82 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: shop-user-service
+
+  config:
+    import: optional:nacos:${spring.application.name}.yaml
+
+  cloud:
+    nacos:
+      username: nacos
+      password: nacos
+      discovery:
+        enabled: true
+        server-addr: localhost:8848
+      config:
+        enabled: true
+        server-addr: localhost:8848
+        file-extension: yaml
+
+
+  datasource:
+    type: com.alibaba.druid.pool.DruidDataSource
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/shopmax?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
+    username: root
+    password: aptx4869
+    druid:
+      initial-size: 5
+      min-idle: 5
+      max-active: 20
+      max-wait: 60000
+      test-while-idle: true
+      test-on-borrow: false
+      test-on-return: false
+      pool-prepared-statements: true
+      max-pool-prepared-statement-per-connection-size: 20
+
+  mail:
+    host: smtp.qq.com
+    username: 1773559695@qq.com
+    password: hiwlqvccxzqfbdie
+    port: 465
+    protocol: smtp
+    properties:
+      from: 1773559695@qq.com
+      mail.smtp.ssl.enable: true
+
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: GMT+8
+    serialization:
+      write-dates-as-timestamps: false
+
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    map-underscore-to-camel-case: true
+  global-config:
+    db-config:
+      id-type: auto
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+  mapper-locations: classpath:/mapper/**/*.xml
+
+# JWT配置
+jwt:
+  secret: shopmax-secret-key-2026-for-jwt-signing-and-verification
+  expiration: 86400000
+
+# 文件上传
+upload:
+  path: D:/CC-Switch/ShopMax/uploads
+
+# 日志配置
+logging:
+  level:
+    com.shop.user: debug
+    com.shop.user.mapper: debug

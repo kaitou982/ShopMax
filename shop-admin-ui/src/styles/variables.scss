@@ -1,0 +1,137 @@
+// =============================================
+// ShopMax Admin — Design Token System
+// Brand: Premium E-Commerce Operations Center
+// =============================================
+
+// ── Brand Colors ─────────────────────────────
+$brand-orange: #FF5000;
+$brand-orange-light: #FF6B2B;
+$brand-orange-dark: #E04800;
+$brand-gradient: linear-gradient(135deg, #FF5000 0%, #FF8C3A 100%);
+
+// ── Primary Palette ──────────────────────────
+$primary-color: #FF5000;
+$primary-light: #FFF2EC;
+$primary-lighter: #FFF8F5;
+$success-color: #00B578;
+$success-light: #E8F9F1;
+$warning-color: #FF8F1F;
+$warning-light: #FFF4E8;
+$danger-color: #FF3B3B;
+$danger-light: #FFEDED;
+$info-color: #8E8E93;
+
+// ── Text Colors ──────────────────────────────
+$text-primary: #1C1C1E;
+$text-regular: #3C3C43;
+$text-secondary: #8E8E93;
+$text-placeholder: #C7C7CC;
+$text-inverse: #FFFFFF;
+
+// ── Border Colors ────────────────────────────
+$border-color-base: #E5E5EA;
+$border-color-light: #F0F0F5;
+$border-color-lighter: #F5F5F7;
+
+// ── Background Colors ────────────────────────
+$bg-color: #F2F2F7;
+$bg-color-page: #F8F8FA;
+$bg-white: #FFFFFF;
+
+// ── Sidebar ──────────────────────────────────
+$sidebar-width: 220px;
+$sidebar-collapsed-width: 64px;
+$sidebar-bg: #1A1A2E;
+$sidebar-bg-secondary: #16213E;
+$sidebar-text: #9898A8;
+$sidebar-text-active: #FFFFFF;
+$sidebar-item-hover: rgba(255, 80, 0, 0.08);
+$sidebar-item-active: rgba(255, 80, 0, 0.15);
+$sidebar-logo-border: rgba(255, 255, 255, 0.06);
+
+// ── Navbar ───────────────────────────────────
+$navbar-height: 52px;
+$navbar-bg: #FFFFFF;
+$navbar-shadow: 0 1px 0 rgba(0, 0, 0, 0.04), 0 2px 8px rgba(0, 0, 0, 0.04);
+
+// ── Spacing Scale ────────────────────────────
+$spacing-xs: 4px;
+$spacing-sm: 8px;
+$spacing-md: 16px;
+$spacing-lg: 24px;
+$spacing-xl: 32px;
+$spacing-2xl: 48px;
+
+// ── Border Radius ────────────────────────────
+$radius-sm: 6px;
+$radius-md: 10px;
+$radius-lg: 16px;
+$radius-xl: 24px;
+$radius-full: 9999px;
+
+// ── Shadows ──────────────────────────────────
+$shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04);
+$shadow-md: 0 4px 12px rgba(0, 0, 0, 0.06);
+$shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.08);
+$shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.1);
+
+// ── Typography ───────────────────────────────
+$font-family-base: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif;
+$font-family-mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+$font-size-xs: 11px;
+$font-size-sm: 12px;
+$font-size-base: 14px;
+$font-size-md: 16px;
+$font-size-lg: 18px;
+$font-size-xl: 20px;
+$font-size-2xl: 24px;
+$font-size-3xl: 30px;
+
+// ── Transitions ──────────────────────────────
+$transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+$transition-base: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+$transition-slow: 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+
+// ── Z-Index Scale ────────────────────────────
+$z-sidebar: 1000;
+$z-navbar: 999;
+$z-dropdown: 1100;
+$z-modal: 2000;
+$z-toast: 3000;
+
+// ── Layout ───────────────────────────────────
+$content-padding: 24px;
+$tabs-height: 40px;
+$page-min-height: calc(100vh - #{$navbar-height} - #{$tabs-height} - #{$content-padding} * 2);
+
+// ── CSS Custom Properties (for Element Plus theming) ──
+:root {
+  --el-color-primary: #{$primary-color};
+  --el-color-primary-light-3: #{$brand-orange-light};
+  --el-color-primary-light-5: #FF8C5A;
+  --el-color-primary-light-7: #FFB899;
+  --el-color-primary-light-8: #FFD4BF;
+  --el-color-primary-light-9: #FFE8DB;
+  --el-color-primary-dark-2: #{$brand-orange-dark};
+  --el-color-success: #{$success-color};
+  --el-color-warning: #{$warning-color};
+  --el-color-danger: #{$danger-color};
+  --el-color-info: #{$info-color};
+  --el-font-family: #{$font-family-base};
+  --el-border-radius-base: #{$radius-sm};
+  --el-border-radius-small: #{$radius-sm};
+  --el-border-radius-round: #{$radius-full};
+  --el-bg-color: #{$bg-white};
+  --el-bg-color-page: #{$bg-color-page};
+  --el-bg-color-overlay: #{$bg-white};
+  --el-text-color-primary: #{$text-primary};
+  --el-text-color-regular: #{$text-regular};
+  --el-text-color-secondary: #{$text-secondary};
+  --el-text-color-placeholder: #{$text-placeholder};
+  --el-border-color: #{$border-color-base};
+  --el-border-color-light: #{$border-color-light};
+  --el-border-color-lighter: #{$border-color-lighter};
+  --el-box-shadow-light: #{$shadow-sm};
+  --el-box-shadow: #{$shadow-md};
+  --el-box-shadow-dark: #{$shadow-lg};
+}

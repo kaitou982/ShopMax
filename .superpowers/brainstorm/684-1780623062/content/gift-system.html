@@ -1,0 +1,82 @@
+<h2>礼物系统设计</h2>
+<p class="subtitle">直播间送礼功能的经济模型</p>
+
+<div class="options">
+  <div class="option" data-choice="virtual" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>纯虚拟礼物（免费）</h3>
+      <p>用户使用免费的虚拟币送礼，仅做互动效果</p>
+      <p class="label">机制</p>
+      <ul>
+        <li>用户每日登录赠送虚拟币</li>
+        <li>送礼只消耗虚拟币，不涉及真实货币</li>
+        <li>礼物仅做动画效果展示，无实际价值</li>
+        <li>主播端可看到礼物统计（仅展示）</li>
+      </ul>
+      <p class="label">优势</p>
+      <ul>
+        <li>实现简单，无需支付对接</li>
+        <li>适合学习项目，无合规风险</li>
+        <li>互动体验完整</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="option" data-choice="coin" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>虚拟币充值体系</h3>
+      <p>用户充值购买虚拟币 → 用虚拟币送礼 → 主播获得分成</p>
+      <p class="label">机制</p>
+      <ul>
+        <li>用户通过支付宝/微信充值购买"金币"</li>
+        <li>礼物消耗金币，不同礼物价格不同</li>
+        <li>主播收到礼物可兑换为余额</li>
+        <li>平台抽成（如 30%）</li>
+      </ul>
+      <p class="label">优势</p>
+      <ul>
+        <li>更接近真实直播平台的商业模式</li>
+        <li>已有的支付系统可复用</li>
+        <li>主播有收益激励</li>
+      </ul>
+      <p class="label">劣势</p>
+      <ul>
+        <li>实现复杂（充值/消费/提现/分成）</li>
+        <li>涉及支付合规问题</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="option" data-choice="visual" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>纯视觉效果（最简）</h3>
+      <p>礼物只做动画展示，不扣费、不计数，纯前端效果</p>
+      <p class="label">机制</p>
+      <ul>
+        <li>用户点击礼物按钮 → 触发前端动画</li>
+        <li>通过 WebSocket 广播给房间所有人</li>
+        <li>不涉及任何后端计费逻辑</li>
+        <li>仅保留消息记录</li>
+      </ul>
+      <p class="label">优势</p>
+      <ul>
+        <li>实现最简单</li>
+        <li>前端动画效果即可满足演示需求</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top: 2rem; padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px;">
+  <h3>我的建议</h3>
+  <p>选 <strong>A（纯虚拟礼物）</strong>。原因：</p>
+  <ul>
+    <li>学习项目不需要真实的资金流转</li>
+    <li>虚拟币体系可以展示完整的送礼流程和动画效果</li>
+    <li>每日赠送机制可以增加用户活跃度设计</li>
+    <li>如果后续想升级到 B 方案，数据模型可以平滑迁移</li>
+  </ul>
+</div>

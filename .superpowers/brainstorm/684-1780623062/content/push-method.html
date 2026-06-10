@@ -1,0 +1,84 @@
+<h2>主播推流方式</h2>
+<p class="subtitle">主播（店家）通过什么方式把画面推送到服务器？</p>
+
+<div class="options">
+  <div class="option" data-choice="obs" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>OBS Studio 推流（推荐）</h3>
+      <p>主播使用 OBS Studio 软件，填入推流地址即可开播</p>
+      <p class="label">工作流程</p>
+      <ol>
+        <li>主播在 ShopMax 后台点击"开播"</li>
+        <li>系统生成 RTMP 推流地址（含鉴权 Token）</li>
+        <li>主播将地址填入 OBS → 开始推流</li>
+        <li>SRS 检测到流 → 后端自动更新状态为"直播中"</li>
+        <li>观众在前端看到直播画面</li>
+      </ol>
+      <p class="label">优势</p>
+      <ul>
+        <li>实现简单，OBS 是行业标准工具</li>
+        <li>支持摄像头+屏幕+图片叠加，功能强大</li>
+        <li>推流质量高，可调分辨率/码率/帧率</li>
+        <li>主播端零开发工作量</li>
+      </ul>
+      <p class="label">劣势</p>
+      <ul>
+        <li>主播需要安装 OBS 软件</li>
+        <li>移动端主播不方便</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="option" data-choice="web" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>浏览器网页推流</h3>
+      <p>主播在 ShopMax 网页上直接开播，无需安装任何软件</p>
+      <p class="label">工作流程</p>
+      <ol>
+        <li>主播在后台点击"开始直播"</li>
+        <li>浏览器请求摄像头/麦克风权限</li>
+        <li>通过 WebRTC/MediaRecorder 采集音视频</li>
+        <li>通过 WHIP 协议推流到 SRS</li>
+        <li>观众端拉流观看</li>
+      </ol>
+      <p class="label">优势</p>
+      <ul>
+        <li>零安装，打开网页就能播</li>
+        <li>移动端主播友好</li>
+        <li>体验更流畅</li>
+      </ul>
+      <p class="label">劣势</p>
+      <ul>
+        <li>实现复杂（WebRTC + WHIP）</li>
+        <li>推流质量受浏览器限制</li>
+        <li>不支持画面叠加/特效</li>
+        <li>SRS 对 WHIP 支持需要额外配置</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="option" data-choice="both" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>两种都支持</h3>
+      <p>OBS 推流为主 + 网页推流为辅，给主播更多选择</p>
+      <p class="label">注意</p>
+      <ul>
+        <li>开发工作量翻倍</li>
+        <li>建议先做 OBS，网页推流作为后续迭代</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top: 2rem; padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px;">
+  <h3>我的建议</h3>
+  <p>选 <strong>A（OBS 推流）</strong>。原因：</p>
+  <ul>
+    <li>这是电商直播的标准做法（淘宝/抖音直播都用 OBS 或定制推流工具）</li>
+    <li>实现简单可靠，后端只需生成推流地址 + 监听 SRS 回调</li>
+    <li>网页推流可以作为 v2 迭代</li>
+  </ul>
+</div>

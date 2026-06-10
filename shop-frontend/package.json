@@ -1,0 +1,16 @@
+{
+  "name": "shop-frontend",
+  "private": true,
+  "scripts": {
+    "dev:web": "pnpm --filter @shop/web dev",
+    "dev:mobile": "pnpm --filter @shop/mobile dev",
+    "build:web": "pnpm --filter @shop/web build",
+    "build:mobile": "pnpm --filter @shop/mobile build",
+    "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r typecheck"
+  },
+  "engines": {
+    "node": ">=18",
+    "pnpm": ">=9"
+  }
+}

@@ -1,0 +1,39 @@
+package com.shop.customerservice.entity;
+
+import com.baomidou.mybatisplus.annotation.*;
+import lombok.Data;
+
+import java.io.Serializable;
+import java.time.LocalDateTime;
+
+@Data
+@TableName("csms_message")
+public class CsMessage implements Serializable {
+
+    private static final long serialVersionUID = 1L;
+
+    @TableId(type = IdType.AUTO)
+    private Long id;
+
+    private Long sessionId;
+
+    private String role;
+
+    private String content;
+
+    private String toolCalls;
+
+    private String toolCallId;
+
+    private Integer tokenCount;
+
+    @TableField(fill = FieldFill.INSERT)
+    private LocalDateTime createTime;
+
+    @TableField(fill = FieldFill.INSERT_UPDATE)
+    private LocalDateTime updateTime;
+
+    @TableLogic
+    @TableField(fill = FieldFill.INSERT)
+    private Integer deleted;
+}

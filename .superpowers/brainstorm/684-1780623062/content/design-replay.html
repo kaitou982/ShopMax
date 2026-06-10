@@ -1,0 +1,176 @@
+<h2>设计 · 录制与回放</h2>
+<p class="subtitle">SRS 自动录制 → MinIO 存储 → 回放播放器</p>
+
+<div class="section">
+  <h3>录制流程</h3>
+  <div class="mockup">
+    <div class="mockup-header">录制与回放完整流程</div>
+    <div class="mockup-body" style="font-size: 12px; padding: 16px; background: #1a1a2e;">
+      <div style="display: flex; flex-direction: column; gap: 10px; font-family: monospace; color: #e0e0e0;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="color: #ef5350; min-width: 60px;">SRS</span>
+          <span style="color: #aaa;">① 直播中 → 实时写入 FLV 到 <code>/record/live/{roomId}.{timestamp}.flv</code></span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="color: #ef5350; min-width: 60px;">SRS</span>
+          <span style="color: #aaa;">② 推流断开 → <code>on_unpublish</code> 回调</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="color: #ffa726; min-width: 60px;">后端</span>
+          <span style="color: #aaa;">③ 收到回调 → 触发异步任务上传录制文件</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="color: #ffa726; min-width: 60px;">后端</span>
+          <span style="color: #aaa;">④ 读取本地 FLV → 上传到 MinIO Bucket <code>live-replay</code></span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="color: #ffa726; min-width: 60px;">后端</span>
+          <span style="color: #aaa;">⑤ 上传成功 → 更新 <code>lms_live_room.replay_url</code> + 计算时长</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="color: #ffa726; min-width: 60px;">后端</span>
+          <span style="color: #aaa;">⑥ 删除本地 <code>/record/</code> 中的临时文件</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="color: #66bb6a; min-width: 60px;">观众</span>
+          <span style="color: #aaa;">⑦ 直播列表 → 已结束 → 点击"观看回放" → 播放 MinIO FLV</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>MinIO 存储设计</h3>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; font-size: 13px;">
+    <div style="background: rgba(255,255,255,0.05); padding: 16px; border-radius: 8px;">
+      <h4 style="color: #42a5f5; margin: 0 0 8px 0;">Bucket 结构</h4>
+      <pre style="margin: 0; font-size: 11px; font-family: monospace; color: #e0e0e0; line-height: 1.8;">
+<span style="color: #888;"># 新增 Bucket: live-replay</span>
+live-replay/
+├── room-1001/
+│   ├── 20260605_143000.flv
+│   ├── 20260605_200000.flv
+│   └── 20260606_150000.flv
+├── room-1002/
+│   └── 20260605_190000.flv
+└── ...
+
+<span style="color: #888;"># 访问策略: read-only (public)</span>
+<span style="color: #888;"># 生命周期: 30 天过期自动删除</span></pre>
+    </div>
+    <div style="background: rgba(255,255,255,0.05); padding: 16px; border-radius: 8px;">
+      <h4 style="color: #ffa726; margin: 0 0 8px 0;">异步上传任务</h4>
+      <pre style="margin: 0; font-size: 11px; font-family: monospace; color: #e0e0e0; line-height: 1.8;">
+<span style="color: #4fc3f7;">@Async</span>(<span style="color: #66bb6a;">"liveReplayExecutor"</span>)
+<span style="color: #4fc3f7;">public void</span> uploadReplay(Long roomId,
+        String localPath) {
+    <span style="color: #888;">// 1. 读取本地 FLV 文件</span>
+    <span style="color: #888;">// 2. 上传到 MinIO</span>
+    String objectName = <span style="color: #66bb6a;">"room-"</span> + roomId
+        + <span style="color: #66bb6a;">"/"</span> + formatDate() + <span style="color: #66bb6a;">".flv"</span>;
+    storageService.upload(
+        <span style="color: #66bb6a;">"live-replay"</span>, objectName, file);
+
+    <span style="color: #888;">// 3. 更新 DB</span>
+    String url = storageService.getAccessUrl(
+        <span style="color: #66bb6a;">"live-replay"</span>, objectName);
+    liveRoomMapper.updateReplayUrl(roomId, url);
+
+    <span style="color: #888;">// 4. 删除本地文件</span>
+    Files.deleteIfExists(Path.of(localPath));
+}</pre>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>回放播放器</h3>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; font-size: 13px;">
+    <div style="background: rgba(255,255,255,0.05); padding: 16px; border-radius: 8px;">
+      <h4 style="color: #4fc3f7; margin: 0 0 8px 0;">Web 端</h4>
+      <pre style="margin: 0; font-size: 11px; font-family: monospace; color: #e0e0e0; line-height: 1.8;">
+<span style="color: #888;">// components/ReplayPlayer.vue</span>
+<span style="color: #888;">// 使用 mpegts.js 播放 FLV 回放</span>
+<span style="color: #888;">// 与 LivePlayer 复用核心逻辑</span>
+<span style="color: #888;">// 差异:</span>
+<span style="color: #888;">// - 非直播模式，支持进度条拖拽</span>
+<span style="color: #888;">// - 支持暂停/恢复</span>
+<span style="color: #888;">// - 显示时长（非 LIVE 标记）</span>
+<span style="color: #888;">// - 无弹幕/互动层（可选开启）</span>
+
+<span style="color: #4fc3f7;">interface</span> <span style="color: #ffa726;">Props</span> {
+  url: <span style="color: #ffa726;">string</span>         <span style="color: #888;">// MinIO FLV URL</span>
+  duration?: <span style="color: #ffa726;">number</span>  <span style="color: #888;">// 总时长(秒)</span>
+  showChat?: <span style="color: #ffa726;">boolean</span> <span style="color: #888;">// 是否显示历史弹幕</span>
+}</pre>
+    </div>
+    <div style="background: rgba(255,255,255,0.05); padding: 16px; border-radius: 8px;">
+      <h4 style="color: #66bb6a; margin: 0 0 8px 0;">Mobile 端</h4>
+      <pre style="margin: 0; font-size: 11px; font-family: monospace; color: #e0e0e0; line-height: 1.8;">
+<span style="color: #888;">&lt;!-- UniApp 回放播放器 --&gt;</span>
+<span style="color: #888;">&lt;!-- FLV 在移动端兼容性差 --&gt;</span>
+<span style="color: #888;">&lt;!-- 需要后端转码为 MP4 --&gt;</span>
+
+<span style="color: #888;">方案: 直播结束后异步转码</span>
+<span style="color: #888;">1. SRS 录制 FLV</span>
+<span style="color: #888;">2. 上传 MinIO 后触发 FFmpeg 转码</span>
+<span style="color: #888;">3. 生成 MP4 版本存入 MinIO</span>
+<span style="color: #888;">4. Mobile 端播放 MP4</span>
+
+<span style="color: #888;"># FFmpeg 转码命令</span>
+ffmpeg -i input.flv \
+  -c:v libx264 -c:a aac \
+  -movflags +faststart \
+  output.mp4</pre>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>回放页面 UI</h3>
+  <div class="mockup">
+    <div class="mockup-header">回放页面布局</div>
+    <div class="mockup-body" style="padding: 16px; background: #0a0a1a;">
+      <div style="display: flex; gap: 16px; height: 200px;">
+        <!-- 视频区域 -->
+        <div style="flex: 1; background: #1a1a2e; border-radius: 8px; position: relative; display: flex; align-items: center; justify-content: center;">
+          <div style="font-size: 48px; opacity: 0.2;">📺</div>
+          <div style="position: absolute; top: 8px; left: 8px; background: rgba(0,0,0,0.6); padding: 2px 8px; border-radius: 4px; font-size: 10px; color: #aaa;">回放</div>
+          <div style="position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.6); padding: 2px 8px; border-radius: 4px; font-size: 10px; color: #aaa;">01:23:45</div>
+          <!-- 进度条 -->
+          <div style="position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.7); padding: 6px 10px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 10px; color: #fff;">▶</span>
+              <div style="flex: 1; height: 3px; background: #333; border-radius: 2px; position: relative;">
+                <div style="position: absolute; left: 0; top: 0; width: 35%; height: 100%; background: #ef5350; border-radius: 2px;"></div>
+              </div>
+              <span style="font-size: 10px; color: #aaa;">43:21 / 1:23:45</span>
+              <span style="font-size: 10px; color: #fff;">⛶</span>
+            </div>
+          </div>
+        </div>
+        <!-- 右侧信息 -->
+        <div style="width: 240px; display: flex; flex-direction: column; gap: 8px;">
+          <div style="background: #1a1a2e; border-radius: 8px; padding: 10px;">
+            <div style="font-size: 12px; font-weight: 600; color: #fff;">直播回放</div>
+            <div style="font-size: 10px; color: #aaa; margin-top: 4px;">2026-06-05 14:30 开播</div>
+            <div style="font-size: 10px; color: #aaa;">时长: 1小时23分钟</div>
+            <div style="font-size: 10px; color: #aaa;">观看: 3,456 次</div>
+          </div>
+          <div style="background: #1a1a2e; border-radius: 8px; padding: 10px; flex: 1;">
+            <div style="font-size: 11px; color: #ffa726; font-weight: 600; margin-bottom: 6px;">直播商品</div>
+            <div style="display: flex; gap: 6px; align-items: center; font-size: 10px; margin-bottom: 4px;">
+              <span style="background: #2d2d4e; padding: 2px 4px; border-radius: 2px;">00:15:30</span>
+              <span style="color: #aaa;">👟 运动鞋 ¥199</span>
+            </div>
+            <div style="display: flex; gap: 6px; align-items: center; font-size: 10px;">
+              <span style="background: #2d2d4e; padding: 2px 4px; border-radius: 2px;">00:45:12</span>
+              <span style="color: #aaa;">👜 手提包 ¥299</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

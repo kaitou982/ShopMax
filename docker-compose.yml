@@ -1,0 +1,37 @@
+services:
+  minio:
+    image: minio/minio:latest
+    container_name: shopmax-minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin123
+    volumes:
+      - ./data/minio:/data
+    command: server /data --console-address ":9001"
+    networks:
+      - shopmax-net
+    restart: unless-stopped
+
+  srs:
+    image: ossrs/srs:6
+    container_name: shopmax-srs
+    ports:
+      - "1935:1935"   # RTMP 推流端口
+      - "8085:8080"   # HTTP-FLV/HLS 输出端口
+      - "1985:1985"   # SRS HTTP API 端口
+    volumes:
+      - ./docker/srs/conf:/usr/local/srs/conf
+      - ./docker/srs/data:/usr/local/srs/data
+      - ./docker/srs/record:/usr/local/srs/record
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - shopmax-net
+    restart: unless-stopped
+
+networks:
+  shopmax-net:
+    driver: bridge

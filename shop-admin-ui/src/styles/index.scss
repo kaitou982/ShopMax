@@ -1,0 +1,426 @@
+// =============================================
+// ShopMax Admin — Global Styles & Reset
+// =============================================
+
+@use './variables.scss' as *;
+
+// ── Reset ────────────────────────────────────
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+html, body, #app {
+  height: 100%;
+}
+
+body {
+  font-family: $font-family-base;
+  font-size: $font-size-base;
+  line-height: 1.6;
+  color: $text-primary;
+  background: $bg-color-page;
+}
+
+// ── Scrollbar ────────────────────────────────
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.12);
+  border-radius: 3px;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.2);
+  }
+}
+
+// ── NProgress ────────────────────────────────
+#nprogress .bar {
+  height: 3px;
+  background: $brand-gradient !important;
+
+  .peg {
+    box-shadow: 0 0 10px $brand-orange, 0 0 5px $brand-orange !important;
+  }
+}
+
+// ── Element Plus — Menu Overrides ────────────
+.el-menu {
+  border-right: none !important;
+}
+
+// ── Element Plus — Button Overrides ──────────
+.el-button {
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  transition: all $transition-fast;
+
+  &--primary {
+    background: $brand-gradient;
+    border-color: transparent;
+
+    &:hover,
+    &:focus {
+      background: linear-gradient(135deg, #FF6B2B 0%, #FF9A4D 100%);
+      border-color: transparent;
+      box-shadow: 0 4px 12px rgba(255, 80, 0, 0.3);
+    }
+
+    &:active {
+      background: linear-gradient(135deg, #E04800 0%, #FF6B2B 100%);
+    }
+  }
+
+  &--success {
+    background: linear-gradient(135deg, #00B578 0%, #00D68F 100%);
+    border-color: transparent;
+
+    &:hover {
+      background: linear-gradient(135deg, #00D68F 0%, #00F0A0 100%);
+      border-color: transparent;
+      box-shadow: 0 4px 12px rgba(0, 181, 120, 0.3);
+    }
+  }
+
+  &--warning {
+    background: linear-gradient(135deg, #FF8F1F 0%, #FFA94D 100%);
+    border-color: transparent;
+
+    &:hover {
+      background: linear-gradient(135deg, #FFA94D 0%, #FFBE7A 100%);
+      border-color: transparent;
+      box-shadow: 0 4px 12px rgba(255, 143, 31, 0.3);
+    }
+  }
+
+  &--danger {
+    background: linear-gradient(135deg, #FF3B3B 0%, #FF6B6B 100%);
+    border-color: transparent;
+
+    &:hover {
+      background: linear-gradient(135deg, #FF6B6B 0%, #FF8E8E 100%);
+      border-color: transparent;
+      box-shadow: 0 4px 12px rgba(255, 59, 59, 0.3);
+    }
+  }
+}
+
+// ── Element Plus — Card Overrides ────────────
+.el-card {
+  border-radius: $radius-md !important;
+  border: 1px solid $border-color-light !important;
+  box-shadow: $shadow-sm !important;
+  transition: box-shadow $transition-base;
+
+  &:hover {
+    box-shadow: $shadow-md !important;
+  }
+
+  .el-card__header {
+    padding: 18px 24px;
+    border-bottom: 1px solid $border-color-light;
+    font-weight: 600;
+    font-size: $font-size-md;
+    color: $text-primary;
+  }
+
+  .el-card__body {
+    padding: 24px;
+  }
+}
+
+// ── Element Plus — Table Overrides ───────────
+.el-table {
+  border-radius: $radius-md;
+  overflow: hidden;
+
+  th.el-table__cell {
+    background: #FAFAFC;
+    color: $text-regular;
+    font-weight: 600;
+    font-size: $font-size-sm;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    border-bottom: 1px solid $border-color-light;
+  }
+
+  .el-table__row {
+    transition: background $transition-fast;
+
+    &:hover > td.el-table__cell {
+      background: #FFFAF8;
+    }
+  }
+
+  td.el-table__cell {
+    border-bottom: 1px solid $border-color-lighter;
+  }
+
+  // Striped rows
+  &--striped .el-table__body tr.el-table__row--striped td.el-table__cell {
+    background: #FAFAFC;
+  }
+}
+
+// ── Element Plus — Tag Overrides ─────────────
+.el-tag {
+  border-radius: $radius-full;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  padding: 0 10px;
+  height: 24px;
+  line-height: 24px;
+  border: none;
+
+  &.el-tag--success {
+    background: $success-light;
+    color: $success-color;
+  }
+
+  &.el-tag--warning {
+    background: $warning-light;
+    color: $warning-color;
+  }
+
+  &.el-tag--danger {
+    background: $danger-light;
+    color: $danger-color;
+  }
+
+  &.el-tag--info {
+    background: #F2F2F7;
+    color: $text-secondary;
+  }
+
+  &.el-tag--primary {
+    background: $primary-light;
+    color: $brand-orange-dark;
+  }
+}
+
+// ── Element Plus — Dialog Overrides ──────────
+.el-dialog {
+  border-radius: $radius-lg;
+  box-shadow: $shadow-xl;
+
+  .el-dialog__header {
+    padding: 24px 24px 0;
+    border-bottom: none;
+
+    .el-dialog__title {
+      font-size: $font-size-lg;
+      font-weight: 700;
+      color: $text-primary;
+    }
+  }
+
+  .el-dialog__body {
+    padding: 24px;
+  }
+
+  .el-dialog__footer {
+    padding: 0 24px 24px;
+    border-top: none;
+  }
+}
+
+// ── Element Plus — Input & Select Overrides ──
+.el-input__wrapper,
+.el-select .el-input__wrapper {
+  border-radius: $radius-sm;
+  box-shadow: 0 0 0 1px $border-color-base inset;
+  transition: box-shadow $transition-fast;
+
+  &:hover {
+    box-shadow: 0 0 0 1px $brand-orange-light inset;
+  }
+
+  &.is-focus {
+    box-shadow: 0 0 0 1px $brand-orange inset, 0 0 0 3px rgba(255, 80, 0, 0.1);
+  }
+}
+
+.el-select-dropdown__item.is-selected {
+  color: $brand-orange;
+  font-weight: 600;
+}
+
+// ── Element Plus — Pagination Overrides ──────
+.el-pagination {
+  .el-pager li.is-active {
+    background: $brand-gradient;
+    border-radius: $radius-sm;
+    border: none;
+  }
+
+  .btn-prev,
+  .btn-next {
+    border-radius: $radius-sm;
+  }
+}
+
+// ── Element Plus — Breadcrumb Overrides ──────
+.el-breadcrumb__inner {
+  color: $text-secondary;
+  font-weight: 500;
+
+  &.is-link:hover {
+    color: $brand-orange;
+  }
+}
+
+.el-breadcrumb__item:last-child .el-breadcrumb__inner {
+  color: $text-primary;
+  font-weight: 600;
+}
+
+// ── Element Plus — Dropdown Overrides ────────
+.el-dropdown-menu {
+  border-radius: $radius-md;
+  border: 1px solid $border-color-light;
+  box-shadow: $shadow-lg;
+  padding: 6px;
+
+  .el-dropdown-menu__item {
+    border-radius: $radius-sm;
+    padding: 8px 16px;
+    font-size: $font-size-base;
+    transition: all $transition-fast;
+
+    &:hover {
+      background: $primary-light;
+      color: $brand-orange;
+    }
+  }
+}
+
+// ── Element Plus — Form Overrides ────────────
+.el-form-item__label {
+  font-weight: 600;
+  color: $text-regular;
+}
+
+.el-form-item.is-required .el-form-item__label::before {
+  color: $danger-color;
+}
+
+// ── Element Plus — Switch Overrides ──────────
+.el-switch.is-checked .el-switch__core {
+  background: $brand-orange;
+  border-color: $brand-orange;
+}
+
+// ── Element Plus — Radio & Checkbox ──────────
+.el-radio__input.is-checked .el-radio__inner {
+  background: $brand-orange;
+  border-color: $brand-orange;
+}
+
+.el-radio__input.is-checked + .el-radio__label {
+  color: $brand-orange;
+}
+
+.el-checkbox__input.is-checked .el-checkbox__inner {
+  background: $brand-orange;
+  border-color: $brand-orange;
+}
+
+.el-checkbox__input.is-checked + .el-checkbox__label {
+  color: $brand-orange;
+}
+
+// ── Shared Utility Classes ───────────────────
+.page-container {
+  padding: $content-padding;
+  background: $bg-white;
+  border-radius: $radius-lg;
+  min-height: $page-min-height;
+  box-shadow: $shadow-sm;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+
+  h2 {
+    margin: 0;
+    font-size: $font-size-2xl;
+    font-weight: 700;
+    color: $text-primary;
+    letter-spacing: -0.01em;
+  }
+}
+
+.search-form,
+.search-bar {
+  margin-bottom: 20px;
+  padding: 20px 24px;
+  background: #FAFAFC;
+  border-radius: $radius-md;
+  border: 1px solid $border-color-light;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+.pagination-wrap,
+.pagination {
+  margin-top: 20px;
+  display: flex;
+  justify-content: flex-end;
+  padding: 16px 0;
+}
+
+// ── Link button style ────────────────────────
+.el-button.is-link {
+  font-weight: 500;
+
+  &.el-button--primary {
+    color: $brand-orange;
+
+    &:hover {
+      color: $brand-orange-light;
+    }
+  }
+}
+
+// ── Status dot indicator ─────────────────────
+.status-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  margin-right: 6px;
+  vertical-align: middle;
+
+  &.status-dot--success { background: $success-color; }
+  &.status-dot--warning { background: $warning-color; }
+  &.status-dot--danger { background: $danger-color; }
+  &.status-dot--info { background: $info-color; }
+}
+
+// ── Selection highlight ──────────────────────
+::selection {
+  background: rgba(255, 80, 0, 0.15);
+  color: $brand-orange-dark;
+}

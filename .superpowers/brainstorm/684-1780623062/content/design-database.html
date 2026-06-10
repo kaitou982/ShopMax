@@ -1,0 +1,128 @@
+<h2>设计 · 数据库变更</h2>
+<p class="subtitle">新增表 + 现有表字段扩展</p>
+
+<div class="section">
+  <h3>新增表：lms_gift（礼物配置）</h3>
+  <div class="mockup">
+    <div class="mockup-header">CREATE TABLE lms_gift</div>
+    <div class="mockup-body" style="font-size: 12px; font-family: monospace; padding: 16px; background: #1a1a2e;">
+      <pre style="margin: 0; color: #e0e0e0; line-height: 1.8;">
+<span style="color: #4fc3f7;">CREATE TABLE</span> <span style="color: #ffa726;">lms_gift</span> (
+    <span style="color: #66bb6a;">id</span>            <span style="color: #4fc3f7;">BIGINT</span>       NOT NULL AUTO_INCREMENT,
+    <span style="color: #66bb6a;">name</span>          <span style="color: #4fc3f7;">VARCHAR</span>(32)  NOT NULL             <span style="color: #888;">COMMENT '礼物名称'</span>,
+    <span style="color: #66bb6a;">icon</span>          <span style="color: #4fc3f7;">VARCHAR</span>(255) NOT NULL             <span style="color: #888;">COMMENT '图标URL'</span>,
+    <span style="color: #66bb6a;">animation_url</span> <span style="color: #4fc3f7;">VARCHAR</span>(255) DEFAULT NULL         <span style="color: #888;">COMMENT 'Lottie动画URL'</span>,
+    <span style="color: #66bb6a;">price</span>         <span style="color: #4fc3f7;">INT</span>          NOT NULL             <span style="color: #888;">COMMENT '虚拟币价格'</span>,
+    <span style="color: #66bb6a;">sort_order</span>    <span style="color: #4fc3f7;">INT</span>          NOT NULL DEFAULT 0   <span style="color: #888;">COMMENT '排序'</span>,
+    <span style="color: #66bb6a;">create_time</span>   <span style="color: #4fc3f7;">DATETIME</span>     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    <span style="color: #66bb6a;">update_time</span>   <span style="color: #4fc3f7;">DATETIME</span>     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    <span style="color: #66bb6a;">deleted</span>       <span style="color: #4fc3f7;">TINYINT</span>      NOT NULL DEFAULT 0,
+    <span style="color: #4fc3f7;">PRIMARY KEY</span> (id)
+) <span style="color: #4fc3f7;">ENGINE</span>=InnoDB <span style="color: #4fc3f7;">DEFAULT CHARSET</span>=utf8mb4 <span style="color: #4fc3f7;">COMMENT</span>=<span style="color: #66bb6a;">'礼物配置表'</span>;
+
+<span style="color: #888;">-- 预置礼物数据</span>
+<span style="color: #4fc3f7;">INSERT INTO</span> lms_gift (name, icon, animation_url, price, sort_order) <span style="color: #4fc3f7;">VALUES</span>
+(<span style="color: #66bb6a;">'玫瑰'</span>,   <span style="color: #66bb6a;">'/gifts/rose.png'</span>,   <span style="color: #66bb6a;">'/gifts/rose.json'</span>,   <span style="color: #ffa726;">10</span>,  1),
+(<span style="color: #66bb6a;">'棒棒糖'</span>, <span style="color: #66bb6a;">'/gifts/lollipop.png'</span>, <span style="color: #66bb6a;">'/gifts/lollipop.json'</span>, <span style="color: #ffa726;">20</span>,  2),
+(<span style="color: #66bb6a;">'奶茶'</span>,   <span style="color: #66bb6a;">'/gifts/milktea.png'</span>, <span style="color: #66bb6a;">'/gifts/milktea.json'</span>, <span style="color: #ffa726;">50</span>,  3),
+(<span style="color: #66bb6a;">'吉他'</span>,   <span style="color: #66bb6a;">'/gifts/guitar.png'</span>,  <span style="color: #66bb6a;">'/gifts/guitar.json'</span>,  <span style="color: #ffa726;">100</span>, 4),
+(<span style="color: #66bb6a;">'火箭'</span>,   <span style="color: #66bb6a;">'/gifts/rocket.png'</span>,  <span style="color: #66bb6a;">'/gifts/rocket.json'</span>,  <span style="color: #ffa726;">200</span>, 5),
+(<span style="color: #66bb6a;">'钻石'</span>,   <span style="color: #66bb6a;">'/gifts/diamond.png'</span>, <span style="color: #66bb6a;">'/gifts/diamond.json'</span>, <span style="color: #ffa726;">500</span>, 6);</pre>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>现有表变更</h3>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; font-size: 13px;">
+    <div style="background: rgba(255,255,255,0.05); padding: 16px; border-radius: 8px;">
+      <h4 style="color: #ffa726; margin: 0 0 8px 0;">ums_user（新增字段）</h4>
+      <pre style="margin: 0; font-size: 11px; font-family: monospace; color: #e0e0e0; line-height: 1.8;">
+<span style="color: #4fc3f7;">ALTER TABLE</span> ums_user
+<span style="color: #4fc3f7;">ADD COLUMN</span> <span style="color: #66bb6a;">coin_balance</span> <span style="color: #4fc3f7;">INT</span> NOT NULL DEFAULT 0
+  <span style="color: #4fc3f7;">COMMENT</span> <span style="color: #66bb6a;">'虚拟币余额'</span>;
+
+<span style="color: #888;">-- 新用户注册赠送 100 币</span>
+<span style="color: #888;">-- 每日登录赠送 10 币</span></pre>
+    </div>
+    <div style="background: rgba(255,255,255,0.05); padding: 16px; border-radius: 8px;">
+      <h4 style="color: #ffa726; margin: 0 0 8px 0;">lms_live_room（新增字段）</h4>
+      <pre style="margin: 0; font-size: 11px; font-family: monospace; color: #e0e0e0; line-height: 1.8;">
+<span style="color: #4fc3f7;">ALTER TABLE</span> lms_live_room
+<span style="color: #4fc3f7;">ADD COLUMN</span> <span style="color: #66bb6a;">like_count</span> <span style="color: #4fc3f7;">BIGINT</span> NOT NULL DEFAULT 0
+  <span style="color: #4fc3f7;">COMMENT</span> <span style="color: #66bb6a;">'点赞总数'</span>,
+
+<span style="color: #4fc3f7;">ADD COLUMN</span> <span style="color: #66bb6a;">gift_count</span> <span style="color: #4fc3f7;">BIGINT</span> NOT NULL DEFAULT 0
+  <span style="color: #4fc3f7;">COMMENT</span> <span style="color: #66bb6a;">'礼物总数'</span>,
+
+<span style="color: #4fc3f7;">ADD COLUMN</span> <span style="color: #66bb6a;">replay_duration</span> <span style="color: #4fc3f7;">INT</span> DEFAULT NULL
+  <span style="color: #4fc3f7;">COMMENT</span> <span style="color: #66bb6a;">'回放时长(秒)'</span>,
+
+<span style="color: #4fc3f7;">MODIFY COLUMN</span> <span style="color: #66bb6a;">status</span> <span style="color: #4fc3f7;">TINYINT</span> NOT NULL DEFAULT 0
+  <span style="color: #4fc3f7;">COMMENT</span> <span style="color: #66bb6a;">'0预告 1直播中 2已结束 3已关闭 4待推流'</span>;</pre>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>lms_live_message 扩展</h3>
+  <div class="mockup">
+    <div class="mockup-header">消息表调整（已有，补充索引）</div>
+    <div class="mockup-body" style="font-size: 12px; font-family: monospace; padding: 16px; background: #1a1a2e;">
+      <pre style="margin: 0; color: #e0e0e0; line-height: 1.8;">
+<span style="color: #888;">-- 查询回放历史弹幕需要</span>
+<span style="color: #4fc3f7;">ALTER TABLE</span> lms_live_message
+<span style="color: #4fc3f7;">ADD INDEX</span> idx_room_type_time (room_id, type, create_time);
+
+<span style="color: #888;">-- type 枚举值确认</span>
+<span style="color: #888;">-- 1=弹幕 2=点赞 3=礼物 4=进入 5=关注 6=系统消息</span></pre>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>新增虚拟币流水表</h3>
+  <div class="mockup">
+    <div class="mockup-header">CREATE TABLE lms_coin_log</div>
+    <div class="mockup-body" style="font-size: 12px; font-family: monospace; padding: 16px; background: #1a1a2e;">
+      <pre style="margin: 0; color: #e0e0e0; line-height: 1.8;">
+<span style="color: #4fc3f7;">CREATE TABLE</span> <span style="color: #ffa726;">lms_coin_log</span> (
+    <span style="color: #66bb6a;">id</span>            <span style="color: #4fc3f7;">BIGINT</span>       NOT NULL AUTO_INCREMENT,
+    <span style="color: #66bb6a;">user_id</span>       <span style="color: #4fc3f7;">BIGINT</span>       NOT NULL             <span style="color: #888;">COMMENT '用户ID'</span>,
+    <span style="color: #66bb6a;">amount</span>        <span style="color: #4fc3f7;">INT</span>          NOT NULL             <span style="color: #888;">COMMENT '变动数量(正增负减)'</span>,
+    <span style="color: #66bb6a;">type</span>          <span style="color: #4fc3f7;">TINYINT</span>      NOT NULL             <span style="color: #888;">COMMENT '1注册赠送 2每日签到 3送礼消费 4系统赠送'</span>,
+    <span style="color: #66bb6a;">biz_id</span>        <span style="color: #4fc3f7;">VARCHAR</span>(64)  DEFAULT NULL         <span style="color: #888;">COMMENT '关联业务ID(消息ID)'</span>,
+    <span style="color: #66bb6a;">remark</span>        <span style="color: #4fc3f7;">VARCHAR</span>(128) DEFAULT NULL         <span style="color: #888;">COMMENT '备注'</span>,
+    <span style="color: #66bb6a;">create_time</span>   <span style="color: #4fc3f7;">DATETIME</span>     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    <span style="color: #4fc3f7;">PRIMARY KEY</span> (id),
+    <span style="color: #4fc3f7;">INDEX</span> idx_user_time (user_id, create_time)
+) <span style="color: #4fc3f7;">ENGINE</span>=InnoDB <span style="color: #4fc3f7;">DEFAULT CHARSET</span>=utf8mb4 <span style="color: #4fc3f7;">COMMENT</span>=<span style="color: #66bb6a;">'虚拟币流水表'</span>;</pre>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>变更汇总</h3>
+  <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; font-size: 13px;">
+    <div style="background: rgba(102,187,106,0.1); padding: 12px; border-radius: 8px; text-align: center; border: 1px solid #66bb6a;">
+      <div style="font-size: 20px;">🆕</div>
+      <div style="font-weight: 600; color: #66bb6a;">lms_gift</div>
+      <div style="font-size: 10px; color: #aaa;">礼物配置表</div>
+    </div>
+    <div style="background: rgba(102,187,106,0.1); padding: 12px; border-radius: 8px; text-align: center; border: 1px solid #66bb6a;">
+      <div style="font-size: 20px;">🆕</div>
+      <div style="font-weight: 600; color: #66bb6a;">lms_coin_log</div>
+      <div style="font-size: 10px; color: #aaa;">虚拟币流水表</div>
+    </div>
+    <div style="background: rgba(255,167,38,0.1); padding: 12px; border-radius: 8px; text-align: center; border: 1px solid #ffa726;">
+      <div style="font-size: 20px;">✏️</div>
+      <div style="font-weight: 600; color: #ffa726;">ums_user</div>
+      <div style="font-size: 10px; color: #aaa;">+coin_balance</div>
+    </div>
+    <div style="background: rgba(255,167,38,0.1); padding: 12px; border-radius: 8px; text-align: center; border: 1px solid #ffa726;">
+      <div style="font-size: 20px;">✏️</div>
+      <div style="font-weight: 600; color: #ffa726;">lms_live_room</div>
+      <div style="font-size: 10px; color: #aaa;">+like_count, +gift_count, +replay_duration, status扩展</div>
+    </div>
+  </div>
+</div>

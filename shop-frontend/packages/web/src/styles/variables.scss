@@ -1,0 +1,77 @@
+// ShopMax Web 设计系统变量
+// 参照设计文档 visual-style: B — 淘宝橙
+
+// ── 品牌色 ──────────────────────────────────────
+$brand-orange: #FF5000;
+$brand-gradient: linear-gradient(90deg, #FF5000, #FF9000);
+$brand-light: #FFF3EC;
+
+// ── 功能色 ──────────────────────────────────────
+$color-success: #00B578;
+$color-warning: #FF8F1F;
+$color-danger: #FF3B3B;
+$color-info: #8E8E93;
+
+// ── 文字色 ──────────────────────────────────────
+$text-primary: #1C1C1E;
+$text-secondary: #8E8E93;
+$text-hint: #C7C7CC;
+$text-placeholder: #C7C7CC;
+$text-inverse: #FFFFFF;
+
+// ── 背景色 ──────────────────────────────────────
+$bg-page: #F2F2F7;
+$bg-card: #FFFFFF;
+$bg-input: #F5F5F5;
+$bg-hover: #FAFAFA;
+
+// ── 边框色 ──────────────────────────────────────
+$border-color: #E5E5EA;
+$border-light: #F0F0F5;
+
+// ── 间距 (4px 基准) ─────────────────────────────
+$spacing-xs: 4px;
+$spacing-sm: 8px;
+$spacing-md: 12px;
+$spacing-base: 16px;
+$spacing-lg: 20px;
+$spacing-xl: 24px;
+$spacing-2xl: 32px;
+$spacing-3xl: 48px;
+
+// ── 圆角 ────────────────────────────────────────
+$radius-sm: 4px;
+$radius-base: 8px;
+$radius-md: 12px;
+$radius-lg: 16px;
+$radius-xl: 24px;
+$radius-round: 50%;
+
+// ── 阴影 ────────────────────────────────────────
+$shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
+$shadow-base: 0 2px 8px rgba(0, 0, 0, 0.06);
+$shadow-md: 0 4px 16px rgba(0, 0, 0, 0.10);
+$shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.14);
+
+// ── 字体 ────────────────────────────────────────
+$font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'PingFang SC',
+  'Helvetica Neue', 'Microsoft YaHei', sans-serif;
+
+$font-size-xs: 12px;
+$font-size-sm: 13px;
+$font-size-base: 14px;
+$font-size-md: 16px;
+$font-size-lg: 18px;
+$font-size-xl: 20px;
+$font-size-2xl: 24px;
+$font-size-3xl: 28px;
+
+// ── 布局 ────────────────────────────────────────
+$header-height: 56px;
+$category-width: 230px;
+$container-max: 1440px;
+
+// ── 动画 ────────────────────────────────────────
+$transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+$transition-base: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+$transition-slow: 0.3s cubic-bezier(0.4, 0, 0.2, 1);

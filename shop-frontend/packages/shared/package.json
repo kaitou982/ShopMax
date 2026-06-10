@@ -1,0 +1,17 @@
+{
+  "name": "@shop/shared",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./*": "./src/*"
+  },
+  "scripts": {
+    "typecheck": "vue-tsc --noEmit"
+  },
+  "peerDependencies": {
+    "pinia": "^2.1.0",
+    "vue": "^3.4.0"
+  }
+}

@@ -1,0 +1,384 @@
+<h2>Instagram 风格 — 社区首页</h2>
+<p class="subtitle">极简白底 + 大面积图片 + 单列信息流 + Stories 横滑栏。保留电商社区的商品卡片功能</p>
+
+<style>
+  .ig-page {
+    background: #fff;
+    border-radius: 12px;
+    border: 1px solid #e8e8e8;
+    overflow: hidden;
+    max-width: 260px;
+    margin: 0 auto;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  .ig-header {
+    padding: 8px 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+  }
+  .ig-stories {
+    padding: 10px 12px;
+    display: flex;
+    gap: 12px;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  .ig-story-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    font-size: 8px;
+  }
+  .ig-story-ring {
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
+    padding: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .ig-story-inner {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: #e0e0e0;
+    border: 2px solid #fff;
+  }
+  .ig-post {
+    border-bottom: 1px solid #f0f0f0;
+  }
+  .ig-post-header {
+    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .ig-post-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #f09433, #dc2743);
+    padding: 1.5px;
+  }
+  .ig-post-avatar-inner {
+    width: 25px;
+    height: 25px;
+    border-radius: 50%;
+    background: #ddd;
+    border: 1.5px solid #fff;
+  }
+  .ig-post-user {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: -0.2px;
+  }
+  .ig-post-location {
+    font-size: 8px;
+    color: #999;
+  }
+  .ig-post-image {
+    width: 100%;
+    aspect-ratio: 1/1;
+    background: #f5f5f5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    position: relative;
+  }
+  .ig-post-actions {
+    padding: 6px 12px;
+    display: flex;
+    gap: 12px;
+    font-size: 16px;
+  }
+  .ig-post-actions .spacer {
+    flex: 1;
+  }
+  .ig-post-likes {
+    padding: 0 12px;
+    font-size: 10px;
+    font-weight: 600;
+    margin-bottom: 2px;
+  }
+  .ig-post-caption {
+    padding: 0 12px;
+    font-size: 10px;
+    line-height: 1.5;
+    margin-bottom: 2px;
+  }
+  .ig-post-caption .username {
+    font-weight: 600;
+  }
+  .ig-post-comments {
+    padding: 0 12px;
+    font-size: 9px;
+    color: #999;
+    margin-bottom: 2px;
+  }
+  .ig-post-time {
+    padding: 0 12px 8px;
+    font-size: 8px;
+    color: #bbb;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .ig-product-card {
+    margin: 6px 12px;
+    background: #fafafa;
+    border-radius: 8px;
+    padding: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid #f0f0f0;
+  }
+  .ig-product-img {
+    width: 44px;
+    height: 44px;
+    border-radius: 6px;
+    background: #eee;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+  }
+  .ig-product-info {
+    flex: 1;
+  }
+  .ig-product-name {
+    font-size: 10px;
+    font-weight: 500;
+  }
+  .ig-product-price {
+    font-size: 10px;
+    font-weight: 700;
+    color: #000;
+  }
+  .ig-product-btn {
+    font-size: 9px;
+    font-weight: 600;
+    color: #fff;
+    background: #0095f6;
+    border: none;
+    border-radius: 4px;
+    padding: 4px 10px;
+    cursor: pointer;
+  }
+  .ig-tab-bar {
+    padding: 6px 0;
+    display: flex;
+    justify-content: space-around;
+    border-top: 1px solid #f0f0f0;
+    font-size: 16px;
+    color: #999;
+  }
+  .ig-tab-bar .active {
+    color: #000;
+  }
+</style>
+
+<div class="split">
+  <div class="mockup">
+    <div class="mockup-header">📱 社区首页 — Instagram 风格</div>
+    <div class="mockup-body" style="padding:8px;text-align:center">
+      <div class="ig-page">
+        <div class="ig-header">
+          <span>ShopMax</span>
+          <span style="display:flex;gap:10px;font-size:14px;font-weight:400">📨 ♥</span>
+        </div>
+        <div class="ig-stories">
+          <div class="ig-story-item">
+            <div class="ig-story-ring"><div class="ig-story-inner"></div></div>
+            <span>关注</span>
+          </div>
+          <div class="ig-story-item">
+            <div class="ig-story-ring"><div class="ig-story-inner"></div></div>
+            <span>美妆</span>
+          </div>
+          <div class="ig-story-item">
+            <div class="ig-story-ring"><div class="ig-story-inner"></div></div>
+            <span>穿搭</span>
+          </div>
+          <div class="ig-story-item">
+            <div class="ig-story-ring"><div class="ig-story-inner"></div></div>
+            <span>数码</span>
+          </div>
+          <div class="ig-story-item">
+            <div class="ig-story-ring"><div class="ig-story-inner"></div></div>
+            <span>家居</span>
+          </div>
+        </div>
+        <div class="ig-post">
+          <div class="ig-post-header">
+            <div class="ig-post-avatar"><div class="ig-post-avatar-inner"></div></div>
+            <div>
+              <div class="ig-post-user">fashion_xiaomei</div>
+              <div class="ig-post-location">杭州 · 银泰百货</div>
+            </div>
+            <span style="flex:1;text-align:right;font-weight:700;font-size:14px">···</span>
+          </div>
+          <div class="ig-post-image">🖼</div>
+          <div class="ig-post-actions">
+            <span>♡</span><span>💬</span><span>✈</span>
+            <span class="spacer"></span>
+            <span>🔖</span>
+          </div>
+          <div class="ig-post-likes">128 次赞</div>
+          <div class="ig-post-caption">
+            <span class="username">fashion_xiaomei</span> 这件T恤真的太舒服了！面料柔软透气，夏天穿完全不会闷热 ☁️
+          </div>
+          <div class="ig-product-card">
+            <div class="ig-product-img">商</div>
+            <div class="ig-product-info">
+              <div class="ig-product-name">纯棉T恤 夏季新款</div>
+              <div class="ig-product-price">¥99.00</div>
+            </div>
+            <button class="ig-product-btn">立即购买</button>
+          </div>
+          <div class="ig-post-comments">查看全部 15 条评论</div>
+          <div class="ig-post-time">2 小时前</div>
+        </div>
+        <div class="ig-tab-bar">
+          <span class="active">🏠</span><span>🔍</span><span style="font-size:22px">＋</span><span>♡</span><span>👤</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mockup">
+    <div class="mockup-header">📝 笔记详情页 — Instagram 风格</div>
+    <div class="mockup-body" style="padding:8px;text-align:center">
+      <div class="ig-page">
+        <div class="ig-header" style="justify-content:flex-start;gap:8px">
+          <span style="font-size:16px">←</span>
+          <span style="font-weight:600;font-size:12px">帖子</span>
+        </div>
+        <div class="ig-post" style="border-bottom:none">
+          <div class="ig-post-header">
+            <div class="ig-post-avatar"><div class="ig-post-avatar-inner"></div></div>
+            <div>
+              <div class="ig-post-user">fashion_xiaomei</div>
+              <div class="ig-post-location">杭州</div>
+            </div>
+            <span style="flex:1;text-align:right;font-size:10px;font-weight:600;color:#0095f6">关注</span>
+          </div>
+          <div class="ig-post-image" style="height:180px">🖼</div>
+          <div class="ig-post-actions" style="justify-content:space-between">
+            <div style="display:flex;gap:12px">
+              <span>♡</span><span>💬</span><span>✈</span>
+            </div>
+            <span>🔖</span>
+          </div>
+          <div class="ig-post-likes">128 次赞</div>
+          <div class="ig-post-caption">
+            <span class="username">fashion_xiaomei</span> 这件T恤真的太舒服了！面料柔软透气，夏天穿完全不会闷热，推荐给大家~ 颜色也很正，百搭款！
+          </div>
+          <div style="padding:4px 12px;font-size:9px;color:#4A90D9">#夏日穿搭 #好物推荐 #纯棉T恤</div>
+          <div class="ig-product-card" style="margin:8px 12px">
+            <div class="ig-product-img">商</div>
+            <div class="ig-product-info">
+              <div class="ig-product-name">纯棉T恤 夏季新款</div>
+              <div class="ig-product-price">¥99.00</div>
+            </div>
+            <button class="ig-product-btn">购买</button>
+          </div>
+          <div class="ig-post-time">2 小时前</div>
+        </div>
+        <div style="border-top:1px solid #f0f0f0;padding:8px 12px">
+          <div style="font-size:10px;font-weight:600;margin-bottom:8px">评论 15</div>
+          <div style="display:flex;gap:8px;margin-bottom:8px">
+            <div style="width:24px;height:24px;border-radius:50%;background:#ddd;flex-shrink:0"></div>
+            <div style="flex:1">
+              <div style="font-size:9px"><b>user_a</b> 颜色好看！买过同款 👍</div>
+              <div style="display:flex;gap:8px;font-size:8px;color:#999;margin-top:2px">
+                <span>2小时前</span><span>回复</span><span>♥ 3</span>
+              </div>
+            </div>
+            <span style="font-size:12px">♡</span>
+          </div>
+          <div style="display:flex;gap:8px;margin-bottom:8px">
+            <div style="width:24px;height:24px;border-radius:50%;background:#ddd;flex-shrink:0"></div>
+            <div style="flex:1">
+              <div style="font-size:9px"><b>shopaholic_b</b> 尺码偏大还是偏小？想入手</div>
+              <div style="display:flex;gap:8px;font-size:8px;color:#999;margin-top:2px">
+                <span>1小时前</span><span>回复</span>
+              </div>
+            </div>
+            <span style="font-size:12px">♡</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top:16px">
+  <h3>Instagram 风格设计要点</h3>
+  <div style="display:flex;gap:10px;flex-wrap:wrap">
+    <div style="flex:1;min-width:150px;background:#fafafa;border-radius:8px;padding:10px">
+      <div style="font-weight:600;font-size:11px;margin-bottom:4px">布局</div>
+      <div style="font-size:10px;color:#666">单列大图流（非双列瀑布流），图片 1:1 比例，强调视觉冲击</div>
+    </div>
+    <div style="flex:1;min-width:150px;background:#fafafa;border-radius:8px;padding:10px">
+      <div style="font-weight:600;font-size:11px;margin-bottom:4px">配色</div>
+      <div style="font-size:10px;color:#666">白底为主，黑色文字，蓝色(#0095f6)作强调色，极简克制</div>
+    </div>
+    <div style="flex:1;min-width:150px;background:#fafafa;border-radius:8px;padding:10px">
+      <div style="font-weight:600;font-size:11px;margin-bottom:4px">字体</div>
+      <div style="font-size:10px;color:#666">系统默认无衬线体，小字号(10-12px)，加粗做层级区分</div>
+    </div>
+    <div style="flex:1;min-width:150px;background:#fafafa;border-radius:8px;padding:10px">
+      <div style="font-weight:600;font-size:11px;margin-bottom:4px">交互</div>
+      <div style="font-size:10px;color:#666">双击点赞 + 底部图标栏 + Stories 横滑 + 底 Tab 导航</div>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top:12px">
+  <h3>与原方案的主要差异</h3>
+  <table style="width:100%;font-size:11px;border-collapse:collapse">
+    <tr style="background:#f5f5f5">
+      <th style="padding:6px 10px;text-align:left;border:1px solid #e0e0e0">维度</th>
+      <th style="padding:6px 10px;text-align:left;border:1px solid #e0e0e0">原方案（双列瀑布流）</th>
+      <th style="padding:6px 10px;text-align:left;border:1px solid #e0e0e0">Instagram 风格</th>
+    </tr>
+    <tr>
+      <td style="padding:6px 10px;border:1px solid #e0e0e0">信息流布局</td>
+      <td style="padding:6px 10px;border:1px solid #e0e0e0">双列瀑布流，高度不一</td>
+      <td style="padding:6px 10px;border:1px solid #e0e0e0">单列大图流，1:1 图片</td>
+    </tr>
+    <tr>
+      <td style="padding:6px 10px;border:1px solid #e0e0e0">图片比例</td>
+      <td style="padding:6px 10px;border:1px solid #e0e0e0">任意比例，自适应高度</td>
+      <td style="padding:6px 10px;border:1px solid #e0e0e0">1:1 方形或 4:5 竖图</td>
+    </tr>
+    <tr>
+      <td style="padding:6px 10px;border:1px solid #e0e0e0">内容发现</td>
+      <td style="padding:6px 10px;border:1px solid #e0e0e0">浏览式，一眼多看</td>
+      <td style="padding:6px 10px;border:1px solid #e0e0e0">沉浸式，逐条阅读</td>
+    </tr>
+    <tr>
+      <td style="padding:6px 10px;border:1px solid #e0e0e0">Stories 栏</td>
+      <td style="padding:6px 10px;border:1px solid #e0e0e0">无</td>
+      <td style="padding:6px 10px;border:1px solid #e0e0e0">顶部横滑 Stories 话题入口</td>
+    </tr>
+    <tr>
+      <td style="padding:6px 10px;border:1px solid #e0e0e0">商品卡片</td>
+      <td style="padding:6px 10px;border:1px solid #e0e0e0">隐藏在详情页</td>
+      <td style="padding:6px 10px;border:1px solid #e0e0e0">流内直接露出，嵌入帖子下方</td>
+    </tr>
+    <tr>
+      <td style="padding:6px 10px;border:1px solid #e0e0e0">视觉调性</td>
+      <td style="padding:6px 10px;border:1px solid #e0e0e0">信息密集型</td>
+      <td style="padding:6px 10px;border:1px solid #e0e0e0">留白多、图片优先、轻量化</td>
+    </tr>
+  </table>
+</div>

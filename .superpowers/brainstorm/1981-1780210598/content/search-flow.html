@@ -1,0 +1,79 @@
+<h2>搜索功能完整流程</h2>
+<p class="subtitle">用户从输入到查看结果的完整交互链路</p>
+
+<div style="font-family:system-ui;font-size:13px;">
+  <!-- 移动端流程 -->
+  <h3>移动端流程</h3>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px;">
+    <div style="background:#fff;border:2px solid #FF5000;border-radius:8px;padding:12px;flex:1;min-width:140px;">
+      <div style="font-weight:700;color:#FF5000;margin-bottom:6px;">1. 首页</div>
+      <div style="font-size:11px;color:#666;">点击搜索框 → 跳转搜索页</div>
+    </div>
+    <div style="align-self:center;color:#999;">→</div>
+    <div style="background:#fff;border:2px solid #1890ff;border-radius:8px;padding:12px;flex:1;min-width:140px;">
+      <div style="font-weight:700;color:#1890ff;margin-bottom:6px;">2. 搜索初始态</div>
+      <div style="font-size:11px;color:#666;">热搜标签 + 搜索历史</div>
+    </div>
+    <div style="align-self:center;color:#999;">→</div>
+    <div style="background:#fff;border:2px solid #722ed1;border-radius:8px;padding:12px;flex:1;min-width:140px;">
+      <div style="font-weight:700;color:#722ed1;margin-bottom:6px;">3. 输入态</div>
+      <div style="font-size:11px;color:#666;">实时建议下拉<br>商品名 + 热搜词</div>
+    </div>
+    <div style="align-self:center;color:#999;">→</div>
+    <div style="background:#fff;border:2px solid #52c41a;border-radius:8px;padding:12px;flex:1;min-width:140px;">
+      <div style="font-weight:700;color:#52c41a;margin-bottom:6px;">4. 结果态</div>
+      <div style="font-size:11px;color:#666;">商品列表 + 排序Tab<br>+ 筛选浮层</div>
+    </div>
+  </div>
+
+  <!-- Web端流程 -->
+  <h3>Web端流程</h3>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px;">
+    <div style="background:#fff;border:2px solid #FF5000;border-radius:8px;padding:12px;flex:1;min-width:140px;">
+      <div style="font-weight:700;color:#FF5000;margin-bottom:6px;">1. 导航栏</div>
+      <div style="font-size:11px;color:#666;">输入关键词<br>显示建议下拉</div>
+    </div>
+    <div style="align-self:center;color:#999;">→</div>
+    <div style="background:#fff;border:2px solid #1890ff;border-radius:8px;padding:12px;flex:1;min-width:140px;">
+      <div style="font-weight:700;color:#1890ff;margin-bottom:6px;">2. 搜索结果页</div>
+      <div style="font-size:11px;color:#666;">左侧筛选面板<br>右侧商品网格</div>
+    </div>
+    <div style="align-self:center;color:#999;">→</div>
+    <div style="background:#fff;border:2px solid #52c41a;border-radius:8px;padding:12px;flex:1;min-width:140px;">
+      <div style="font-weight:700;color:#52c41a;margin-bottom:6px;">3. 筛选/排序</div>
+      <div style="font-size:11px;color:#666;">左侧选分类/品牌<br>顶部选排序方式</div>
+    </div>
+  </div>
+
+  <!-- 后端数据流 -->
+  <h3>后端数据流</h3>
+  <div style="background:#fff;border-radius:8px;padding:16px;">
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <div style="background:#f0f5ff;border:1px solid #adc6ff;border-radius:6px;padding:10px;flex:1;min-width:120px;text-align:center;">
+        <div style="font-weight:700;color:#1890ff;font-size:12px;">搜索请求</div>
+        <div style="font-size:10px;color:#666;margin-top:4px;">GET /api/v1/products<br>?keyword=xx&sortBy=price</div>
+      </div>
+      <div style="align-self:center;color:#999;">→</div>
+      <div style="background:#fff7e6;border:1px solid #ffd591;border-radius:6px;padding:10px;flex:1;min-width:120px;text-align:center;">
+        <div style="font-weight:700;color:#fa8c16;font-size:12px;">记录关键词</div>
+        <div style="font-size:10px;color:#666;margin-top:4px;">异步写入<br>cms_search_keyword</div>
+      </div>
+      <div style="align-self:center;color:#999;">→</div>
+      <div style="background:#f6ffed;border:1px solid #b7eb8f;border-radius:6px;padding:10px;flex:1;min-width:120px;text-align:center;">
+        <div style="font-weight:700;color:#52c41a;font-size:12px;">返回结果</div>
+        <div style="font-size:10px;color:#666;margin-top:4px;">分页商品数据<br>+ 总数</div>
+      </div>
+    </div>
+    <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">
+      <div style="background:#fff0f6;border:1px solid #ffadd2;border-radius:6px;padding:10px;flex:1;min-width:120px;text-align:center;">
+        <div style="font-weight:700;color:#eb2f96;font-size:12px;">热搜API</div>
+        <div style="font-size:10px;color:#666;margin-top:4px;">GET /api/v1/search/hot<br>返回 Top 10 热搜词</div>
+      </div>
+      <div style="align-self:center;color:#999;">→</div>
+      <div style="background:#f9f0ff;border:1px solid #d3adf7;border-radius:6px;padding:10px;flex:1;min-width:120px;text-align:center;">
+        <div style="font-weight:700;color:#722ed1;font-size:12px;">建议API</div>
+        <div style="font-size:10px;color:#666;margin-top:4px;">GET /api/v1/search/suggest<br>?keyword=xx</div>
+      </div>
+    </div>
+  </div>
+</div>

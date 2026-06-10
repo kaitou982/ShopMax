@@ -1,0 +1,109 @@
+<h2>技术栈 & 项目结构</h2>
+<p class="subtitle">pnpm monorepo，三包共享 API + Store</p>
+
+<div class="mockup">
+  <div class="mockup-header">项目结构</div>
+  <div class="mockup-body" style="font-family:monospace;font-size:13px;line-height:1.8;padding:24px">
+shop-frontend/
+├── pnpm-workspace.yaml
+├── package.json                    ← 根 package，scripts 编排
+├── tsconfig.base.json              ← 共享 TS 配置
+│
+├── packages/
+│   ├── shared/                     ← 共享层
+│   │   ├── package.json            ← @shop/shared
+│   │   ├── src/
+│   │   │   ├── api/                ← 11 个 API 模块
+│   │   │   ├── stores/             ← Pinia stores（user/cart）
+│   │   │   ├── types/              ← TypeScript 类型
+│   │   │   └── utils/              ← 工具函数
+│   │   └── index.ts
+│   │
+│   ├── web/                        ← Web 端
+│   │   ├── package.json            ← @shop/web
+│   │   ├── vite.config.ts
+│   │   ├── src/
+│   │   │   ├── App.vue
+│   │   │   ├── main.ts
+│   │   │   ├── router/             ← Vue Router
+│   │   │   ├── pages/              ← 页面组件
+│   │   │   ├── components/         ← Naive UI + 自定义组件
+│   │   │   ├── layouts/            ← DefaultLayout / BlankLayout
+│   │   │   └── assets/
+│   │   └── index.html
+│   │
+│   └── mobile/                     ← 小程序 / App 端
+│       ├── package.json            ← @shop/mobile (UniApp)
+│       ├── vite.config.ts
+│       ├── src/
+│       │   ├── pages/
+│       │   ├── components/
+│       │   ├── stores/             ← import from @shop/shared 或本地
+│       │   └── pages.json
+│       └── manifest.json
+</div>
+</div>
+
+<style>
+.tech-table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 13px; }
+.tech-table th { text-align: left; padding: 8px 12px; background: #f5f5f5; font-weight: 600; }
+.tech-table td { padding: 8px 12px; border-bottom: 1px solid #eee; }
+.tech-table tr:last-child td { border-bottom: none; }
+</style>
+
+<h3>Web 端技术选型</h3>
+<table class="tech-table">
+  <tr><th>层</th><th>选型</th><th>说明</th></tr>
+  <tr><td>框架</td><td>Vue 3 + TypeScript</td><td>与 admin 端统一</td></tr>
+  <tr><td>构建</td><td>Vite 5</td><td>极速 HMR</td></tr>
+  <tr><td>UI 库</td><td><strong>Naive UI</strong></td><td>现代风格，TS 原生，Tree Shaking</td></tr>
+  <tr><td>路由</td><td>Vue Router 4</td><td>标准 SPA 路由</td></tr>
+  <tr><td>状态</td><td>Pinia + persist</td><td>复用 shared 包定义</td></tr>
+  <tr><td>HTTP</td><td>Axios</td><td>与 admin 端统一拦截器</td></tr>
+  <tr><td>CSS</td><td>SCSS + CSS Variables</td><td>全局主题变量</td></tr>
+  <tr><td>图标</td><td>Naive UI Icons + 自定义 SVG</td><td>按需引入</td></tr>
+</table>
+
+<h3>Mobile 端技术选型</h3>
+<table class="tech-table">
+  <tr><th>层</th><th>选型</th><th>说明</th></tr>
+  <tr><td>框架</td><td>UniApp 3 + Vue 3</td><td>保留跨端能力</td></tr>
+  <tr><td>构建</td><td>Vite (uni-app 插件)</td><td>—</td></tr>
+  <tr><td>UI 库</td><td><strong>Uni UI</strong>（替换 uview-plus）</td><td>UniApp 官方，三端表现一致</td></tr>
+  <tr><td>状态</td><td>Pinia + persist</td><td>复用 @shop/shared 的 store 定义</td></tr>
+  <tr><td>HTTP</td><td>uni.request 封装（同 shared 接口）</td><td>保持与当前一致的请求层</td></tr>
+</table>
+
+<h3>Shared 包依赖关系</h3>
+<div class="mockup">
+  <div class="mockup-header">依赖方向</div>
+  <div class="mockup-body" style="text-align:center;padding:32px;font-size:13px">
+    <div style="display:inline-block;border:2px solid #FF5000;border-radius:12px;padding:16px 24px;margin:8px;font-weight:600">@shop/shared<br><span style="font-size:11px;font-weight:400;color:#999">API · Stores · Types</span></div>
+    <div style="margin:16px;color:#999">↓ 依赖 ↓</div>
+    <div style="display:flex;gap:24px;justify-content:center">
+      <div style="border:2px solid #409EFF;border-radius:12px;padding:16px 24px">@shop/web<br><span style="font-size:11px;color:#999">Vue 3 + Naive UI</span></div>
+      <div style="border:2px solid #67C23A;border-radius:12px;padding:16px 24px">@shop/mobile<br><span style="font-size:11px;color:#999">UniApp + Uni UI</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="pros-cons">
+  <div class="pros">
+    <h4>Shared 包包含</h4>
+    <ul>
+      <li>API 函数（类型安全的请求封装）</li>
+      <li>Pinia Store 定义（user, cart）</li>
+      <li>TypeScript 类型（共享 DTO / 实体）</li>
+      <li>工具函数（格式化、校验）</li>
+    </ul>
+  </div>
+  <div class="cons">
+    <h4>Shared 包不包含</h4>
+    <ul>
+      <li>Vue 组件（Web/Mobile UI 完全不同）</li>
+      <li>路由配置（两端路由体系不同）</li>
+      <li>样式（两端设计系统独立）</li>
+      <li>HTTP Client 实例（Axios vs uni.request 各自封装）</li>
+    </ul>
+  </div>
+</div>

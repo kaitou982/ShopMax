@@ -1,0 +1,64 @@
+# === Java / Maven ===
+target/
+*.class
+*.jar
+*.war
+*.ear
+*.log
+hs_err_pid*
+
+# === IDE ===
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+.settings/
+.project
+.classpath
+.factorypath
+*.swp
+*.swo
+*~
+
+# === Node / pnpm ===
+node_modules/
+dist/
+.output/
+.nuxt/
+*.local
+.pnpm-store/
+
+# === UniApp ===
+.hbuilderx/
+unpackage/
+
+# === OS ===
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# === 环境配置（含密码） ===
+.env
+.env.local
+.env.*.local
+
+# === 上传文件 ===
+uploads/
+
+# === MySQL / Redis 数据 ===
+*.sql.bak
+dump.rdb
+
+# === 日志 ===
+logs/
+*.log
+
+# === 超级大脑 ===
+.superpowers/
+
+# === Claude Code ===
+.claude/settings.local.json
+
+# === 数据目录 ===
+data/

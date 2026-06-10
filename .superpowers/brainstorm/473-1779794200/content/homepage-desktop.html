@@ -1,0 +1,104 @@
+<h2>桌面端首页布局</h2>
+<p class="subtitle">顶部导航 + 左侧分类树 + 右侧内容区，对齐京东结构</p>
+
+<div class="mockup">
+  <div class="mockup-header">桌面端 1440px 首页布局</div>
+  <div class="mockup-body">
+    <!-- 顶部导航 -->
+    <div class="mock-nav" style="display:flex;align-items:center;gap:24px;padding:0 24px;height:56px">
+      <span style="font-size:22px;font-weight:800;color:#ff5000">ShopMax</span>
+      <div style="flex:1;display:flex;align-items:center;position:relative">
+        <input class="mock-input" placeholder="🔍  搜索商品、品牌、分类..." style="width:100%;max-width:480px;height:38px;border-radius:19px">
+      </div>
+      <span style="font-size:13px">👤 我的订单</span>
+      <span style="font-size:13px;position:relative">🛒 购物车 <span style="position:absolute;top:-6px;right:-10px;background:#ff5000;color:#fff;border-radius:50%;width:16px;height:16px;font-size:10px;display:flex;align-items:center;justify-content:center">3</span></span>
+      <span style="font-size:13px">📨 消息</span>
+    </div>
+
+    <!-- 主内容区 -->
+    <div style="display:flex;min-height:600px">
+      <!-- 左侧分类 -->
+      <div style="width:230px;background:#f8f8f8;padding:8px 0;font-size:13px;flex-shrink:0">
+        <div style="padding:10px 20px;color:#333;cursor:pointer;background:#fff;font-weight:600">📱 手机数码</div>
+        <div style="padding:10px 20px;color:#555;cursor:pointer">💻 电脑办公</div>
+        <div style="padding:10px 20px;color:#555;cursor:pointer">🏠 家用电器</div>
+        <div style="padding:10px 20px;color:#555;cursor:pointer">👗 服饰内衣</div>
+        <div style="padding:10px 20px;color:#555;cursor:pointer">💄 美妆护肤</div>
+        <div style="padding:10px 20px;color:#555;cursor:pointer">🍜 食品生鲜</div>
+        <div style="padding:10px 20px;color:#555;cursor:pointer">👶 母婴用品</div>
+        <div style="padding:10px 20px;color:#555;cursor:pointer">🏃 运动户外</div>
+        <div style="padding:10px 20px;color:#555;cursor:pointer">📚 图书文具</div>
+        <div style="padding:10px 20px;color:#555;cursor:pointer">🎮 更多分类 ▸</div>
+      </div>
+
+      <!-- 右侧内容 -->
+      <div style="flex:1;overflow:hidden;padding:16px 20px">
+        <!-- Banner + 侧边快报 -->
+        <div style="display:flex;gap:16px;margin-bottom:16px">
+          <div class="placeholder" style="flex:1;height:320px;background:linear-gradient(135deg,#ff6b6b,#ff5000);color:#fff;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:700">
+            轮播 Banner<br><span style="font-size:14px;font-weight:400;margin-top:8px">3 张图，自动轮播 + 手动滑动</span>
+          </div>
+          <div style="width:180px;display:flex;flex-direction:column;gap:8px">
+            <div class="placeholder" style="flex:1;background:#fff;padding:12px;font-size:11px">
+              <div style="font-weight:600;margin-bottom:6px">📢 快报</div>
+              <div style="color:#666;line-height:1.8">· iPhone 16 新品首发<br>· 618 大促预热<br>· 百亿补贴专场<br>· 限时秒杀 10:00</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 金刚区 + 秒杀 -->
+        <div style="display:flex;gap:36px;padding:20px 0;justify-content:center;border-bottom:1px solid #eee;margin-bottom:16px;font-size:12px">
+          <div style="text-align:center">⚡<br>限时秒杀</div>
+          <div style="text-align:center">👑<br>会员中心</div>
+          <div style="text-align:center">🔥<br>百亿补贴</div>
+          <div style="text-align:center">💬<br>社区</div>
+          <div style="text-align:center">📺<br>直播</div>
+          <div style="text-align:center">🎫<br>领券中心</div>
+          <div style="text-align:center">📦<br>新品首发</div>
+          <div style="text-align:center">⭐<br>我的收藏</div>
+        </div>
+
+        <!-- 商品瀑布流 -->
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px">
+          <div class="placeholder" style="height:280px;border-radius:12px;overflow:hidden">
+            <div style="height:180px;background:#e8e8e8"></div>
+            <div style="padding:10px;font-size:12px">
+              <div style="font-weight:600;margin-bottom:4px">商品名称</div>
+              <div style="color:#ff5000;font-size:18px;font-weight:700">¥99.00</div>
+              <div style="color:#999;font-size:11px">已售 1.2w</div>
+            </div>
+          </div>
+          <div class="placeholder" style="height:280px;border-radius:12px"></div>
+          <div class="placeholder" style="height:280px;border-radius:12px"></div>
+          <div class="placeholder" style="height:280px;border-radius:12px"></div>
+          <div class="placeholder" style="height:280px;border-radius:12px"></div>
+          <div class="placeholder" style="height:280px;border-radius:12px"></div>
+          <div class="placeholder" style="height:280px;border-radius:12px"></div>
+          <div class="placeholder" style="height:280px;border-radius:12px"></div>
+        </div>
+
+        <div style="text-align:center;padding:40px;color:#999;font-size:13px">—— 滚动加载更多 ——</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="pros-cons">
+  <div class="pros">
+    <h4>关键设计决策确认</h4>
+    <ul>
+      <li>左侧分类：hover 一级展开二级/三级面板（参照京东）</li>
+      <li>搜索框：居中大框，有搜索联想下拉</li>
+      <li>金刚区：8 个图标入口含社区和直播</li>
+      <li>商品区：4 列 grid，滚动加载更多</li>
+      <li>响应式 1200px 以下：收起左侧菜单，搜索框缩短</li>
+    </ul>
+  </div>
+  <div class="cons">
+    <h4>待确认</h4>
+    <ul>
+      <li>是否需要「购物车」侧边滑出面板（hover 购物车图标时）？</li>
+      <li>右侧是否需要「回到顶部」按钮？</li>
+    </ul>
+  </div>
+</div>

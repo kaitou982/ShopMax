@@ -1,0 +1,149 @@
+<h2>Web 端整体布局方案</h2>
+<p class="subtitle">作为电商平台 C 端网站，选一个整体布局方向</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>经典电商布局</h3>
+      <p>顶部通栏导航（Logo + 搜索 + 购物车 + 用户），下方分类菜单，中间内容区，底部页脚。类似淘宝/京东网页版。</p>
+    </div>
+  </div>
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>现代轻量布局</h3>
+      <p>左侧固定窄侧栏导航，右侧内容区全屏滚动。类似 Notion/飞书文档。简洁、沉浸感强。</p>
+    </div>
+  </div>
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>混合布局</h3>
+      <p>首页用经典电商布局，社区/直播等轻内容页用侧栏布局。按页面类型切换导航模式。</p>
+    </div>
+  </div>
+</div>
+
+<hr style="margin: 48px 0 24px; border-color: var(--border-color)">
+
+<h3>方案 A — 经典电商</h3>
+
+<div class="mockup">
+  <div class="mockup-header">桌面端 1200px</div>
+  <div class="mockup-body">
+    <div class="mock-nav">🏪 ShopMax &nbsp;&nbsp;|&nbsp;&nbsp; <input class="mock-input" placeholder="搜索商品..." style="width:300px;height:36px"> &nbsp;&nbsp; 🛒 购物车 (3) &nbsp;&nbsp; 👤 我的</div>
+    <div style="background:#f5f5f5;padding:12px 24px;font-size:13px;color:#666">
+      全部分类 ▼ &nbsp;&nbsp; 手机数码 &nbsp;&nbsp; 电脑办公 &nbsp;&nbsp; 服饰内衣 &nbsp;&nbsp; 美妆护肤 &nbsp;&nbsp; 食品生鲜 &nbsp;&nbsp; 更多
+    </div>
+    <div style="display:flex;gap:24px;padding:24px;min-height:400px">
+      <div class="placeholder" style="flex:1;min-height:300px">Banner 轮播 + 秒杀</div>
+      <div style="width:240px;display:flex;flex-direction:column;gap:16px">
+        <div class="placeholder" style="height:80px">用户卡片</div>
+        <div class="placeholder" style="height:120px">快报/公告</div>
+        <div class="placeholder" style="flex:1">排行榜</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="mockup">
+  <div class="mockup-header">移动端 &lt; 768px</div>
+  <div class="mockup-body" style="max-width:375px;margin:0 auto">
+    <div class="mock-nav" style="font-size:12px">← 首页 &nbsp;&nbsp;&nbsp; 搜索商品... &nbsp;&nbsp;&nbsp; 🛒 👤</div>
+    <div style="display:flex;overflow-x:auto;gap:8px;padding:8px 12px;background:#fff;font-size:11px;color:#666">
+      <span>推荐</span><span>手机</span><span>电脑</span><span>服饰</span><span>美妆</span><span>食品</span>
+    </div>
+    <div class="placeholder" style="height:200px;margin:12px">Banner</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 12px">
+      <div class="placeholder" style="height:180px">商品</div>
+      <div class="placeholder" style="height:180px">商品</div>
+      <div class="placeholder" style="height:180px">商品</div>
+      <div class="placeholder" style="height:180px">商品</div>
+    </div>
+  </div>
+</div>
+
+<hr style="margin: 48px 0 24px; border-color: var(--border-color)">
+
+<h3>方案 B — 侧栏布局</h3>
+
+<div class="split">
+  <div class="mockup" style="flex:0.6">
+    <div class="mockup-header">仅桌面端</div>
+    <div class="mockup-body">
+      <div style="display:flex;min-height:400px">
+        <div class="mock-sidebar" style="width:72px;display:flex;flex-direction:column;align-items:center;gap:24px;padding-top:24px">
+          <span>🏪</span><span>🏠</span><span>📂</span><span>💬</span><span>📺</span><span>🛒</span><span>👤</span>
+        </div>
+        <div class="mock-content" style="flex:1;padding:24px">
+          <div class="placeholder" style="height:80px;margin-bottom:16px">搜索 + Banner</div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+            <div class="placeholder" style="height:200px">商品卡片</div>
+            <div class="placeholder" style="height:200px">商品卡片</div>
+            <div class="placeholder" style="height:200px">商品卡片</div>
+            <div class="placeholder" style="height:200px">商品卡片</div>
+            <div class="placeholder" style="height:200px">商品卡片</div>
+            <div class="placeholder" style="height:200px">商品卡片</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="mockup" style="flex:0.4">
+    <div class="mockup-header">移动端</div>
+    <div class="mockup-body" style="max-width:375px;margin:0 auto">
+      <div style="min-height:300px">
+        <div class="mock-nav" style="font-size:12px">🏪 ShopMax &nbsp; 🛒</div>
+        <div class="placeholder" style="height:150px;margin:12px">Banner</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 12px">
+          <div class="placeholder" style="height:160px">商品</div>
+          <div class="placeholder" style="height:160px">商品</div>
+        </div>
+      </div>
+      <div class="mock-nav" style="font-size:11px;justify-content:space-around;position:sticky;bottom:0">🏠 首页 | 📂 分类 | 💬 社区 | 🛒 购物车 | 👤 我的</div>
+    </div>
+  </div>
+</div>
+
+<hr style="margin: 48px 0 24px; border-color: var(--border-color)">
+
+<h3>核心对比</h3>
+
+<div class="pros-cons">
+  <div class="pros">
+    <h4>方案 A — 经典电商</h4>
+    <ul>
+      <li>用户最熟悉，学习成本为零</li>
+      <li>淘宝/京东都这样，内容密度高</li>
+      <li>顶部导航 + 搜索强露出</li>
+    </ul>
+  </div>
+  <div class="cons">
+    <h4>需要注意</h4>
+    <ul>
+      <li>移动端顶部空间紧张</li>
+      <li>代码量较大（两层导航）</li>
+      <li>看起来像传统电商而不是现代品牌</li>
+    </ul>
+  </div>
+</div>
+
+<div class="pros-cons">
+  <div class="pros">
+    <h4>方案 B — 侧栏布局</h4>
+    <ul>
+      <li>现代感强，与众不同</li>
+      <li>导航始终可见，切换快</li>
+      <li>代码量少，适配简单</li>
+    </ul>
+  </div>
+  <div class="cons">
+    <h4>需要注意</h4>
+    <ul>
+      <li>用户不熟悉，可能迷路</li>
+      <li>侧栏占空间，内容区变窄</li>
+      <li>电商类网站很少用这个模式</li>
+    </ul>
+  </div>
+</div>

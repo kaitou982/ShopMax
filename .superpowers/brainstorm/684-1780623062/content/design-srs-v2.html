@@ -1,0 +1,130 @@
+<h2>设计 · SRS 部署与配置（修正版）</h2>
+<p class="subtitle">修复：拉流鉴权 / DVR 自动清理 / Docker 网络兼容性</p>
+
+<div class="section">
+  <h3>1. 拉流鉴权方案</h3>
+  <div style="background: rgba(255,255,255,0.05); padding: 16px; border-radius: 8px; font-size: 13px;">
+    <p style="margin: 0 0 12px 0;">使用 SRS <code>on_play</code> 回调验证观众身份：</p>
+    <div class="mockup">
+      <div class="mockup-header">srs.conf — on_play 鉴权</div>
+      <div class="mockup-body" style="font-size: 12px; font-family: monospace; padding: 16px; background: #1a1a2e;">
+        <pre style="margin: 0; color: #e0e0e0; line-height: 1.8;">
+<span style="color: #4fc3f7;">vhost</span> __defaultVhost__ {
+    <span style="color: #4fc3f7;">http_hooks</span> {
+        <span style="color: #4fc3f7;">enabled</span>         on;
+        <span style="color: #4fc3f7;">on_publish</span>      http://shop-live:8083/api/v1/live/srs/callback;
+        <span style="color: #4fc3f7;">on_unpublish</span>    http://shop-live:8083/api/v1/live/srs/callback;
+        <span style="color: #4fc3f7;">on_play</span>         http://shop-live:8083/api/v1/live/srs/on-play;
+        <span style="color: #4fc3f7;">on_stop</span>         http://shop-live:8083/api/v1/live/srs/on-stop;
+    }
+}</pre>
+      </div>
+    </div>
+    <div style="margin-top: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+      <div style="background: rgba(79,195,247,0.1); padding: 10px; border-radius: 6px; border-left: 3px solid #4fc3f7;">
+        <h4 style="color: #4fc3f7; margin: 0 0 6px 0;">HTTP-FLV 鉴权</h4>
+        <p style="margin: 0; font-size: 12px;">观众携带 token 参数播放：<br>
+        <code style="color: #ffa726;">http://host:8085/live/{roomId}.flv?token={jwt}</code></p>
+        <p style="margin: 6px 0 0 0; font-size: 12px; color: #aaa;">SRS 触发 on_play → 后端验证 token → 返回 0 允许 / 非 0 拒绝</p>
+      </div>
+      <div style="background: rgba(102,187,106,0.1); padding: 10px; border-radius: 6px; border-left: 3px solid #66bb6a;">
+        <h4 style="color: #66bb6a; margin: 0 0 6px 0;">HLS 鉴权</h4>
+        <p style="margin: 0; font-size: 12px;">HLS 无法逐请求鉴权，采用<strong>签名 URL</strong>方案：</p>
+        <p style="margin: 6px 0 0 0; font-size: 12px;"><code style="color: #66bb6a;">/live/{roomId}.m3u8?token={jwt}&expire={ts}</code></p>
+        <p style="margin: 6px 0 0 0; font-size: 12px; color: #aaa;">Nginx 层校验签名，过期则 403。Token 有效期 30 分钟，前端自动续签。</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>2. DVR 录制自动清理</h3>
+  <div style="background: rgba(255,255,255,0.05); padding: 16px; border-radius: 8px; font-size: 13px;">
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+      <div>
+        <h4 style="color: #ffa726; margin: 0 0 8px 0;">录制流程</h4>
+        <ol style="margin: 0; padding-left: 20px;">
+          <li>直播中 → SRS 实时写入 FLV 到 <code>/record/</code></li>
+          <li>直播结束 → <code>on_unpublish</code> 回调触发</li>
+          <li>后端异步任务：上传 FLV 到 MinIO</li>
+          <li>上传成功 → 更新 DB <code>replay_url</code></li>
+          <li>删除本地 FLV 临时文件</li>
+        </ol>
+      </div>
+      <div>
+        <h4 style="color: #ef5350; margin: 0 0 8px 0;">清理策略</h4>
+        <ul style="margin: 0; padding-left: 20px;">
+          <li><strong>即时清理</strong>：上传 MinIO 成功后立即删除本地文件</li>
+          <li><strong>兜底清理</strong>：定时任务每天凌晨扫描 <code>/record/</code></li>
+          <li>超过 24 小时的本地文件强制删除（防止上传失败堆积）</li>
+          <li>MinIO 中回放保留 <strong>30 天</strong>，过期自动删除</li>
+          <li>配置项 <code>live.replay.retention-days=30</code> 可调整</li>
+        </ul>
+      </div>
+    </div>
+    <div style="margin-top: 12px; background: rgba(239,83,80,0.1); padding: 10px; border-radius: 6px; border-left: 3px solid #ef5350;">
+      <h4 style="color: #ef5350; margin: 0 0 6px 0;">定时任务设计</h4>
+      <pre style="margin: 0; font-size: 12px; font-family: monospace; color: #e0e0e0;">
+<span style="color: #4fc3f7;">@Scheduled</span>(cron = <span style="color: #66bb6a;">"0 0 3 * * ?"</span>)  <span style="color: #888;">// 每天凌晨 3 点</span>
+<span style="color: #4fc3f7;">public void</span> cleanupExpiredReplays() {
+    <span style="color: #888;">// 1. 删除 MinIO 中超过 retention-days 的回放文件</span>
+    <span style="color: #888;">// 2. 删除本地 /record/ 中超过 24h 的残留文件</span>
+    <span style="color: #888;">// 3. 更新 DB 中过期回放的 replay_url 为 null</span>
+}</pre>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>3. Docker 网络兼容性修正</h3>
+  <div style="background: rgba(255,255,255,0.05); padding: 16px; border-radius: 8px; font-size: 13px;">
+    <p style="margin: 0 0 12px 0;">弃用 <code>host.docker.internal</code>，改用 Docker 共享网络 + 容器名通信：</p>
+    <div class="mockup">
+      <div class="mockup-header">docker-compose.yml（修正）</div>
+      <div class="mockup-body" style="font-size: 12px; font-family: monospace; padding: 16px; background: #1a1a2e;">
+        <pre style="margin: 0; color: #e0e0e0; line-height: 1.8;">
+<span style="color: #4fc3f7;">services:</span>
+  <span style="color: #66bb6a;">srs:</span>
+    image: ossrs/srs:6
+    ports:
+      - <span style="color: #ffa726;">1935:1935</span>   <span style="color: #888;"># RTMP</span>
+      - <span style="color: #ffa726;">8085:8080</span>   <span style="color: #888;"># HTTP-FLV/HLS</span>
+      - <span style="color: #ffa726;">1985:1985</span>   <span style="color: #888;"># HTTP API</span>
+    volumes:
+      - ./docker/srs/conf:/usr/local/srs/conf
+      - ./docker/srs/record:/usr/local/srs/record
+    <span style="color: #ffa726;">networks:</span>
+      - <span style="color: #ffa726;">shopmax-net</span>
+    restart: unless-stopped
+
+  <span style="color: #66bb6a;">minio:</span>
+    <span style="color: #888;"># ... 已有配置 ...</span>
+    <span style="color: #ffa726;">networks:</span>
+      - <span style="color: #ffa726;">shopmax-net</span>
+
+<span style="color: #ffa726;">networks:</span>
+  <span style="color: #ffa726;">shopmax-net:</span>
+    <span style="color: #ffa726;">driver:</span> bridge</pre>
+      </div>
+    </div>
+    <div style="margin-top: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+      <div style="background: rgba(239,83,80,0.1); padding: 10px; border-radius: 6px;">
+        <h4 style="color: #ef5350; margin: 0 0 6px 0;">❌ 之前的问题</h4>
+        <ul style="margin: 0; padding-left: 16px; font-size: 12px;">
+          <li><code>host.docker.internal</code> 仅 Docker Desktop 自动支持</li>
+          <li>Linux 需手动加 <code>extra_hosts</code></li>
+          <li>回调地址硬编码，环境切换需改配置</li>
+        </ul>
+      </div>
+      <div style="background: rgba(102,187,106,0.1); padding: 10px; border-radius: 6px;">
+        <h4 style="color: #66bb6a; margin: 0 0 6px 0;">✅ 修正方案</h4>
+        <ul style="margin: 0; padding-left: 16px; font-size: 12px;">
+          <li>所有容器加入 <code>shopmax-net</code> 共享网络</li>
+          <li>SRS 回调地址用容器名：<code>http://shop-live:8083/...</code></li>
+          <li>跨平台兼容，无需 <code>extra_hosts</code></li>
+          <li>后端服务地址通过环境变量注入</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>

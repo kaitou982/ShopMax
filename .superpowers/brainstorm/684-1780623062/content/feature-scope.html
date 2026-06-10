@@ -1,0 +1,82 @@
+<h2>直播功能范围选择</h2>
+<p class="subtitle">选择你希望本次实现的功能模块（可多选）</p>
+
+<div class="options" data-multiselect>
+  <div class="option" data-choice="core" onclick="toggleSelect(this)">
+    <div class="letter">1</div>
+    <div class="content">
+      <h3>核心推流/拉流</h3>
+      <p>OBS 推流到 SRS → 前端播放器拉流观看</p>
+      <p class="label">包含</p>
+      <ul>
+        <li>SRS Docker 部署 + RTMP 推流端口</li>
+        <li>前端视频播放器（mpegts.js / hls.js）</li>
+        <li>直播状态自动检测（开播/下播）</li>
+        <li>推流地址生成与鉴权</li>
+      </ul>
+      <p style="color: #f59e0b; font-weight: 600;">这是直播的基础，必须实现</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="interaction" onclick="toggleSelect(this)">
+    <div class="letter">2</div>
+    <div class="content">
+      <h3>实时互动（弹幕/点赞/礼物）</h3>
+      <p>WebSocket 驱动的直播间实时互动体验</p>
+      <p class="label">包含</p>
+      <ul>
+        <li>弹幕发送与显示（滚动动画）</li>
+        <li>点赞动画与计数</li>
+        <li>虚拟礼物系统（选择/发送/动画）</li>
+        <li>在线人数实时更新</li>
+        <li>进入直播间提示</li>
+      </ul>
+      <p class="label">后端状态</p>
+      <p>WebSocket Handler 已有骨架，需完善消息处理和前端对接</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="commerce" onclick="toggleSelect(this)">
+    <div class="letter">3</div>
+    <div class="content">
+      <h3>直播带货（商品浮窗/购买）</h3>
+      <p>直播间内的商品展示与购买闭环</p>
+      <p class="label">包含</p>
+      <ul>
+        <li>直播间商品列表浮窗</li>
+        <li>主播"讲解中"商品高亮推送</li>
+        <li>商品卡片点击 → 加购/立即购买</li>
+        <li>直播专属价格展示</li>
+      </ul>
+      <p class="label">后端状态</p>
+      <p>LiveProduct CRUD 已完整，需对接前端购买流程</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="replay" onclick="toggleSelect(this)">
+    <div class="letter">4</div>
+    <div class="content">
+      <h3>录制与回放</h3>
+      <p>直播结束后自动生成回放视频</p>
+      <p class="label">包含</p>
+      <ul>
+        <li>SRS 自动录制到 MinIO</li>
+        <li>回放列表页面</li>
+        <li>回放播放器（进度条/暂停）</li>
+        <li>回放中的商品时间点标记</li>
+      </ul>
+      <p class="label">注意</p>
+      <p>SRS 原生支持 FLV/HLS 录制，可直接对接 MinIO</p>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top: 2rem; padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px;">
+  <h3>建议的实现顺序</h3>
+  <ol>
+    <li><strong>核心推流/拉流</strong> — 没有这个其他都是空谈</li>
+    <li><strong>实时互动</strong> — 直播的灵魂，已有后端骨架</li>
+    <li><strong>直播带货</strong> — 电商直播的核心价值</li>
+    <li><strong>录制与回放</strong> — 锦上添花，可后续迭代</li>
+  </ol>
+</div>

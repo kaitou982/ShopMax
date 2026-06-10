@@ -1,0 +1,57 @@
+{
+  "easycom": {
+    "autoscan": true,
+    "custom": {
+      "^uni-(.*)": "@dcloudio/uni-ui/lib/uni-$1/uni-$1.vue"
+    }
+  },
+  "pages": [
+    { "path": "pages/index/index", "style": { "navigationBarTitleText": "ShopMax", "navigationStyle": "custom" } },
+    { "path": "pages/category/index", "style": { "navigationBarTitleText": "分类" } },
+    { "path": "pages/cart/index", "style": { "navigationBarTitleText": "购物车" } },
+    { "path": "pages/user/index", "style": { "navigationBarTitleText": "我的" } },
+    { "path": "pages/product/detail", "style": { "navigationBarTitleText": "商品详情", "navigationStyle": "custom" } },
+    { "path": "pages/login/index", "style": { "navigationBarTitleText": "登录" } },
+    { "path": "pages/order/list", "style": { "navigationBarTitleText": "我的订单" } },
+    { "path": "pages/order/confirm", "style": { "navigationBarTitleText": "确认订单" } },
+    { "path": "pages/user/profile", "style": { "navigationBarTitleText": "编辑资料" } },
+    { "path": "pages/user/address", "style": { "navigationBarTitleText": "收货地址" } },
+    { "path": "pages/user/setting", "style": { "navigationBarTitleText": "设置" } },
+    { "path": "pages/community/index", "style": { "navigationBarTitleText": "社区", "navigationStyle": "custom" } },
+    { "path": "pages/live/index", "style": { "navigationBarTitleText": "直播" } },
+    { "path": "pages/search/index", "style": { "navigationBarTitleText": "搜索" } },
+    { "path": "pages/user/store-apply", "style": { "navigationBarTitleText": "店铺入驻" } },
+    { "path": "pages/login/register", "style": { "navigationBarTitleText": "注册账号" } },
+    { "path": "pages/login/forgot-password", "style": { "navigationBarTitleText": "重置密码" } },
+    { "path": "pages/user/password", "style": { "navigationBarTitleText": "修改密码" } },
+    { "path": "pages/community/detail", "style": { "navigationBarTitleText": "笔记详情", "navigationStyle": "custom" } },
+    { "path": "pages/community/publish", "style": { "navigationBarTitleText": "发布笔记", "navigationStyle": "custom" } },
+    { "path": "pages/live/room", "style": { "navigationBarTitleText": "直播间", "navigationStyle": "custom" } },
+    { "path": "pages/coupon/center", "style": { "navigationBarTitleText": "领券中心" } },
+    { "path": "pages/coupon/my", "style": { "navigationBarTitleText": "我的优惠券" } },
+    { "path": "pages/order/logistics", "style": { "navigationBarTitleText": "物流详情" } },
+    { "path": "pages/order/detail", "style": { "navigationBarTitleText": "订单详情" } },
+    { "path": "pages/product/reviews", "style": { "navigationBarTitleText": "商品评价" } },
+    { "path": "pages/customer-service/chat", "style": { "navigationBarTitleText": "在线客服" } },
+    { "path": "pages/seckill/index", "style": { "navigationBarTitleText": "限时秒杀" } },
+    { "path": "pages/user/favorites", "style": { "navigationBarTitleText": "我的收藏" } }
+  ],
+  "globalStyle": {
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "ShopMax",
+    "navigationBarBackgroundColor": "#fff",
+    "backgroundColor": "#F2F2F7"
+  },
+  "tabBar": {
+    "color": "#999999",
+    "selectedColor": "#FF5000",
+    "borderStyle": "black",
+    "backgroundColor": "#ffffff",
+    "list": [
+      { "pagePath": "pages/index/index", "text": "首页", "iconPath": "static/tabbar/home.png", "selectedIconPath": "static/tabbar/home-active.png" },
+      { "pagePath": "pages/category/index", "text": "分类", "iconPath": "static/tabbar/category.png", "selectedIconPath": "static/tabbar/category-active.png" },
+      { "pagePath": "pages/cart/index", "text": "购物车", "iconPath": "static/tabbar/cart.png", "selectedIconPath": "static/tabbar/cart-active.png" },
+      { "pagePath": "pages/user/index", "text": "我的", "iconPath": "static/tabbar/user.png", "selectedIconPath": "static/tabbar/user-active.png" }
+    ]
+  }
+}

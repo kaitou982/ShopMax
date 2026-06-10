@@ -1,0 +1,122 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: shop-gateway
+  cloud:
+    nacos:
+      username: nacos
+      password: nacos
+      discovery:
+        enabled: true
+        server-addr: localhost:8848
+      config:
+        enabled: false
+    gateway:
+      # 全局 CORS 配置
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins:
+              - "http://localhost:3000"
+              - "http://localhost:3100"
+              - "http://localhost:3200"
+              - "http://localhost:5173"
+              - "http://localhost:5174"
+              - "http://localhost:8080"
+              - "http://localhost:8081"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+              - PATCH
+            allowedHeaders:
+              - "Content-Type"
+              - "Authorization"
+              - "X-Requested-With"
+              - "Accept"
+              - "Origin"
+              - "X-User-Id"
+              - "X-User-Role"
+            allowCredentials: true
+      # 全局默认过滤器：去除下游服务重复的 CORS 响应头，避免浏览器报多值错误
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_FIRST
+      routes:
+        # ==================== 认证服务 ====================
+        - id: shop-auth
+          uri: lb://shop-auth
+          predicates:
+            - Path=/api/v1/auth/**
+        # ==================== 文件服务 ====================
+        - id: shop-file-service
+          uri: lb://shop-file-service
+          predicates:
+            - Path=/api/v1/files/**
+        # ==================== 用户服务 ====================
+        - id: shop-user-service
+          uri: lb://shop-user-service
+          predicates:
+            - Path=/api/v1/users/**
+        # ==================== 商品服务 ====================
+        - id: shop-product-service
+          uri: lb://shop-product-service
+          predicates:
+            - Path=/api/v1/products/**,/api/v1/categories/**,/api/v1/brands/**
+        # ==================== 订单服务 ====================
+        - id: shop-order-service
+          uri: lb://shop-order-service
+          predicates:
+            - Path=/api/v1/orders/**,/api/v1/logistics/**
+        # ==================== 营销服务 ====================
+        - id: shop-marketing-service
+          uri: lb://shop-marketing-service
+          predicates:
+            - Path=/api/v1/marketing/**
+        # ==================== 直播服务 ====================
+        - id: shop-live-service
+          uri: lb://shop-live-service
+          predicates:
+            - Path=/api/v1/live/**
+        # ==================== 社区服务 ====================
+        - id: shop-community-service
+          uri: lb://shop-community-service
+          predicates:
+            - Path=/api/v1/community/**
+        # ==================== 管理后台服务 ====================
+        - id: shop-admin-service
+          uri: lb://shop-admin-service
+          predicates:
+            - Path=/api/v1/admin/**,/api/v1/banners/**
+        # ==================== 支付服务 ====================
+        - id: shop-payment-service
+          uri: lb://shop-payment-service
+          predicates:
+            - Path=/api/v1/payments/**
+        # ==================== 智能客服服务 ====================
+        - id: shop-customer-service
+          uri: lb://shop-customer-service
+          predicates:
+            - Path=/api/v1/cs/**
+        - id: shop-customer-service-ws
+          uri: lb://shop-customer-service
+          predicates:
+            - Path=/ws/cs/**
+        # ==================== 直播 WebSocket ====================
+        - id: shop-live-service-ws
+          uri: lb://shop-live-service
+          predicates:
+            - Path=/ws/live/**
+  codec:
+    max-in-memory-size: 10MB
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: GMT+8
+
+# ==================== JWT配置 ====================
+jwt:
+  secret: shopmax-secret-key-2026-for-jwt-signing-and-verification
+  expiration: 86400000

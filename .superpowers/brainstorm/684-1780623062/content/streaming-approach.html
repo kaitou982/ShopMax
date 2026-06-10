@@ -1,0 +1,79 @@
+<h2>直播技术路线选择</h2>
+<p class="subtitle">ShopMax 需要一套完整的直播推流/拉流方案。以下是三种主流路线：</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>自建流媒体服务器（推荐）</h3>
+      <p><strong>方案</strong>：使用开源 SRS (Simple Realtime Server) 或 ZLMediaKit，Docker 部署</p>
+      <p><strong>协议</strong>：RTMP 推流 → HLS/HTTP-FLV/WebSocket-FLV 拉流</p>
+      <p class="label">优势</p>
+      <ul>
+        <li>完全免费，无云服务费用</li>
+        <li>学习价值高，理解底层原理</li>
+        <li>Docker 一键部署，与项目 MinIO/Redis 同架构</li>
+        <li>支持录制、转码、截图等扩展</li>
+      </ul>
+      <p class="label">劣势</p>
+      <ul>
+        <li>需要公网 IP 或内网穿透才能外网访问</li>
+        <li>性能受限于本机资源</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>云服务商直播 SDK</h3>
+      <p><strong>方案</strong>：阿里云直播 / 腾讯云直播 / 声网 Agora</p>
+      <p><strong>协议</strong>：RTMP 推流 → CDN 分发 → HLS/FLV 拉流</p>
+      <p class="label">优势</p>
+      <ul>
+        <li>开箱即用，稳定性高</li>
+        <li>全球 CDN 加速，延迟低</li>
+        <li>自带录制、转码、鉴黄等增值功能</li>
+      </ul>
+      <p class="label">劣势</p>
+      <ul>
+        <li>需要付费（按流量/时长计费）</li>
+        <li>学习价值低，主要是调 API</li>
+        <li>需要实名认证 + 企业资质（部分功能）</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>WebRTC 纯浏览器方案</h3>
+      <p><strong>方案</strong>：浏览器原生 WebRTC + 信令服务器</p>
+      <p><strong>协议</strong>：WebRTC P2P/通过 SFU 中转</p>
+      <p class="label">优势</p>
+      <ul>
+        <li>超低延迟（< 1s）</li>
+        <li>无需安装推流软件（OBS）</li>
+        <li>浏览器原生支持</li>
+      </ul>
+      <p class="label">劣势</p>
+      <ul>
+        <li>大规模观众场景需要 SFU/MCU 服务器</li>
+        <li>移动端兼容性复杂</li>
+        <li>不适合录制/回放场景</li>
+        <li>实现复杂度最高</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top: 2rem; padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px;">
+  <h3>我的建议</h3>
+  <p>对于 ShopMax 这个学习型电商项目，<strong>方案 A（自建 SRS）</strong>最合适：</p>
+  <ul>
+    <li>与现有 Docker/MinIO/Redis 架构一致，部署简单</li>
+    <li>完全免费，适合学习和演示</li>
+    <li>SRS 社区活跃，文档完善，支持 RTMP/HLS/HTTP-FLV/WebRTC</li>
+    <li>可以完整体验从推流到播放的全链路</li>
+  </ul>
+</div>
