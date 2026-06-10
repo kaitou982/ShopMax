@@ -62,3 +62,8 @@ logs/
 
 # === 数据目录 ===
 data/
+
+# === SRS 录制文件 ===
+docker/srs/record/**/*.flv
+docker/srs/record/**/*.tmp
+EOF
