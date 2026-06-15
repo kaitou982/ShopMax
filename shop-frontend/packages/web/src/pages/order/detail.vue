@@ -3,7 +3,8 @@ defineOptions({ name: 'OrderDetailPage' })
 
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useMessage, useDialog } from 'naive-ui'
+import { NIcon, useMessage, useDialog } from 'naive-ui'
+import { ArrowBackOutline, WalletOutline, LogoAlipay, LogoWechat, ChevronForwardOutline } from '@vicons/ionicons5'
 import { orderApi, type OrderDetail } from '@shop/shared'
 import LogisticsDetail from '@/components/LogisticsDetail.vue'
 
@@ -28,9 +29,9 @@ const statusMap: Record<number, { label: string; color: string }> = {
 }
 
 const payMethods = [
-  { value: 3, label: '余额支付', icon: '💰', desc: '使用账户余额支付' },
-  { value: 1, label: '支付宝', icon: '🔵', desc: '使用支付宝支付' },
-  { value: 2, label: '微信支付', icon: '🟢', desc: '使用微信支付' },
+  { value: 3, label: '余额支付', icon: WalletOutline, desc: '使用账户余额支付', color: '#FF9000' },
+  { value: 1, label: '支付宝', icon: LogoAlipay, desc: '使用支付宝支付', color: '#1677FF' },
+  { value: 2, label: '微信支付', icon: LogoWechat, desc: '使用微信支付', color: '#07C160' },
 ]
 
 onMounted(async () => {
@@ -149,7 +150,10 @@ const getMethodLabel = (t: number) => payMethods.find(m => m.value === t)?.label
 
 <template>
   <div class="od-page">
-    <button class="od-back" @click="router.back()">← 返回订单列表</button>
+    <button class="od-back" @click="router.back()">
+      <n-icon :size="16"><ArrowBackOutline /></n-icon>
+      返回订单列表
+    </button>
 
     <div v-if="loading" class="od-loading">加载中...</div>
 
@@ -233,9 +237,9 @@ const getMethodLabel = (t: number) => payMethods.find(m => m.value === t)?.label
         <div class="pp-list">
           <div class="pp-item" v-for="m in payMethods" :key="m.value"
                :class="{ balance: m.value === 3 }" @click="handlePayMethod(m.value)">
-            <text class="pp-icon">{{ m.icon }}</text>
+            <n-icon :size="28" :color="m.color"><component :is="m.icon" /></n-icon>
             <div class="pp-info"><span class="pp-label">{{ m.label }}</span><span class="pp-desc">{{ m.desc }}</span></div>
-            <text class="pp-arrow">›</text>
+            <n-icon :size="20" color="#ccc"><ChevronForwardOutline /></n-icon>
           </div>
         </div>
         <button class="pp-close" @click="showPayPicker = false">取消</button>
@@ -248,6 +252,7 @@ const getMethodLabel = (t: number) => payMethods.find(m => m.value === t)?.label
 <style scoped lang="scss">
 .od-page { max-width: 720px; }
 .od-back {
+  display: inline-flex; align-items: center; gap: 6px;
   padding: 6px 16px; border: 1px solid $border-color; background: #fff;
   border-radius: 18px; font-size: $font-size-sm; cursor: pointer;
   color: $text-secondary; margin-bottom: $spacing-lg;

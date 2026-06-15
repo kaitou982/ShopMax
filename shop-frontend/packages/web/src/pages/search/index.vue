@@ -2,6 +2,8 @@
 defineOptions({ name: 'SearchPage' })
 import { ref, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { NIcon } from 'naive-ui'
+import { FlameOutline } from '@vicons/ionicons5'
 import { productApi, categoryApi, brandApi, searchApi, type ProductDetail, type Category, type Brand, type HotKeyword } from '@shop/shared'
 
 const route = useRoute()
@@ -165,7 +167,10 @@ watch(total, () => { totalPages.value = Math.ceil(total.value / pageSize.value) 
     <main class="search-content">
       <!-- 热门搜索（未搜索时显示） -->
       <div v-if="!keyword && hotKeywords.length" class="hot-section">
-        <div class="h-header"><span>🔥 热门搜索</span></div>
+        <div class="h-header">
+          <n-icon :size="16" color="#FF5000"><FlameOutline /></n-icon>
+          <span>热门搜索</span>
+        </div>
         <div class="h-tags">
           <span v-for="(item, i) in hotKeywords" :key="item.keyword" class="h-tag hot" :class="{ top: i < 3 }" @click="onHistory(item.keyword)">
             {{ item.keyword }}

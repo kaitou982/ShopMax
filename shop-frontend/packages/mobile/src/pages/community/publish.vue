@@ -64,7 +64,18 @@ const submit = async () => {
 <template>
   <view class="cp">
     <view class="hd"><text class="cancel" @click="goBack">取消</text><text class="t">发布笔记</text><text class="pub" :class="{on:content.trim()}" @click="submit">{{submitting?'发布中...':'发布'}}</text></view>
-    <view class="img-row"><view class="img-item" v-for="(url,i) in images" :key="i"><image :src="url" mode="aspectFill"/><text class="del" @click="removeImage(i)">✕</text></view><view class="add-btn" v-if="images.length<9" @click="chooseImage"><text>+</text><text>{{images.length}}/9</text></view></view>
+    <view class="img-row">
+      <view class="img-item" v-for="(url,i) in images" :key="i">
+        <image :src="url" mode="aspectFill"/>
+        <view class="del" @click="removeImage(i)">
+          <uni-icons type="close" size="14" color="#fff" />
+        </view>
+      </view>
+      <view class="add-btn" v-if="images.length<9" @click="chooseImage">
+        <uni-icons type="plusempty" size="28" color="#999" />
+        <text>{{images.length}}/9</text>
+      </view>
+    </view>
     <input v-model="title" placeholder="标题（选填）" class="in" />
     <textarea v-model="content" placeholder="分享你的想法..." class="ta" />
   </view>

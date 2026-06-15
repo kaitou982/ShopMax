@@ -9,9 +9,18 @@ const showComing = () => uni.showToast({ title: '功能开发中', icon: 'none' 
 <template>
   <view class="sp">
     <view class="menu">
-      <view class="mi" @click="goPassword"><text>修改密码</text><text class="ar">›</text></view>
-      <view class="mi" @click="showComing"><text>账号安全</text><text class="ar">›</text></view>
-      <view class="mi" @click="showComing"><text>关于我们</text><text class="ar">›</text></view>
+      <view class="mi" @click="goPassword">
+        <text>修改密码</text>
+        <uni-icons type="right" size="16" color="#ccc" />
+      </view>
+      <view class="mi" @click="showComing">
+        <text>账号安全</text>
+        <uni-icons type="right" size="16" color="#ccc" />
+      </view>
+      <view class="mi" @click="showComing">
+        <text>关于我们</text>
+        <uni-icons type="right" size="16" color="#ccc" />
+      </view>
     </view>
     <view class="menu" style="margin-top:16rpx"><view class="mi" @click="logout"><text style="color:#FF3B3B">退出登录</text></view></view>
   </view>

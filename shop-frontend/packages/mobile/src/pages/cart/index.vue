@@ -6,14 +6,21 @@ const goProduct = (id: number) => uni.navigateTo({ url: `/pages/product/detail?i
 </script>
 <template>
   <view class="cp">
-    <view v-if="!cs.cartList.length" class="empty">🛒<text>购物车空空如也</text></view>
+    <view v-if="!cs.cartList.length" class="empty">
+      <uni-icons type="cart" size="60" color="#ccc" />
+      <text>购物车空空如也</text>
+    </view>
     <view v-else class="list">
       <view class="item" v-for="i in cs.cartList" :key="i.id">
-        <text class="cb" :class="{on:i.selected}" @click="cs.toggleSelected(i.id)">{{i.selected?'☑':'☐'}}</text>
+        <view class="cb" @click="cs.toggleSelected(i.id)">
+          <uni-icons :type="i.selected ? 'checkbox-filled' : 'circle'" size="22" :color="i.selected ? '#FF5000' : '#ccc'" />
+        </view>
         <image :src="i.image||'/api/v1/files/default/product'" mode="aspectFill" class="img" @click="goProduct(i.productId)"/>
         <view class="info" @click="goProduct(i.productId)"><text class="name">{{i.name}}</text><text class="price">¥{{i.price}}</text></view>
         <view class="qty"><text @click="cs.updateQuantity(i.id,i.quantity-1)">−</text><text>{{i.quantity}}</text><text @click="cs.updateQuantity(i.id,i.quantity+1)">+</text></view>
-        <text class="del" @click="cs.removeFromCart(i.id)">✕</text>
+        <view class="del" @click="cs.removeFromCart(i.id)">
+          <uni-icons type="trash" size="18" color="#ccc" />
+        </view>
       </view>
       <view class="bar" style="margin-bottom: 48px"><text class="total">合计: ¥{{cs.totalPrice.toFixed(2)}}</text><button class="btn" @click="goCheckout">去结算({{cs.selectedCount}})</button></view>
     </view>

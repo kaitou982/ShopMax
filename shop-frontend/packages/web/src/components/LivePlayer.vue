@@ -4,6 +4,8 @@
  * 支持 HTTP-FLV (mpegts.js) 和 HLS (hls.js) 自动降级
  */
 import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { NIcon } from 'naive-ui'
+import { VolumeMuteOutline, VolumeHighOutline, ExpandOutline, VideocamOutline } from '@vicons/ionicons5'
 import mpegts from 'mpegts.js'
 import Hls from 'hls.js'
 
@@ -196,7 +198,7 @@ defineExpose({ toggleMute, toggleFullscreen })
 
     <div v-else-if="playerState === 'ended'" class="live-player__overlay">
       <div class="live-player__ended">
-        <span class="live-player__ended-icon">📺</span>
+        <n-icon :size="48" color="#aaa" class="live-player__ended-icon"><VideocamOutline /></n-icon>
         <span>直播已结束</span>
       </div>
     </div>
@@ -210,10 +212,10 @@ defineExpose({ toggleMute, toggleFullscreen })
     <!-- 控制栏 -->
     <div v-if="playerState === 'playing'" class="live-player__controls">
       <button class="live-player__btn" @click="toggleMute">
-        {{ muted ? '🔇' : '🔊' }}
+        <n-icon :size="18" color="#fff"><component :is="muted ? VolumeMuteOutline : VolumeHighOutline" /></n-icon>
       </button>
       <button class="live-player__btn" @click="toggleFullscreen">
-        ⛶
+        <n-icon :size="18" color="#fff"><ExpandOutline /></n-icon>
       </button>
     </div>
   </div>

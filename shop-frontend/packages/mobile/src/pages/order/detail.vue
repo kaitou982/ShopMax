@@ -20,9 +20,9 @@ const statusMap: Record<number, { label: string; color: string }> = {
 }
 
 const payMethods = [
-  { value: 3, label: '余额支付', icon: '💰' },
-  { value: 1, label: '支付宝', icon: '🔵' },
-  { value: 2, label: '微信支付', icon: '🟢' },
+  { value: 3, label: '余额支付', icon: 'wallet' },
+  { value: 1, label: '支付宝', icon: 'auth' },
+  { value: 2, label: '微信支付', icon: 'weixin' },
 ]
 
 onLoad((opts?: any) => {
@@ -145,7 +145,10 @@ function formatTime(t?: string) {
 
       <!-- 收货信息 -->
       <view class="card">
-        <view class="card-title">📍 收货信息</view>
+        <view class="card-title">
+          <uni-icons type="location" size="18" color="#FF5000" />
+          <text>收货信息</text>
+        </view>
         <view class="addr-info">
           <view class="addr-top">
             <text class="addr-name">{{ order.receiverName }}</text>
@@ -157,7 +160,10 @@ function formatTime(t?: string) {
 
       <!-- 商品信息 -->
       <view class="card">
-        <view class="card-title">📦 商品信息</view>
+        <view class="card-title">
+          <uni-icons type="shop" size="18" color="#FF5000" />
+          <text>商品信息</text>
+        </view>
         <view class="goods-item">
           <view class="goods-info">
             <text class="goods-name">{{ order.orderNo }}</text>
@@ -168,7 +174,10 @@ function formatTime(t?: string) {
 
       <!-- 金额明细 -->
       <view class="card">
-        <view class="card-title">💰 金额明细</view>
+        <view class="card-title">
+          <uni-icons type="wallet" size="18" color="#FF5000" />
+          <text>金额明细</text>
+        </view>
         <view class="amount-row"><text>商品总额</text><text>¥{{ order.totalAmount?.toFixed(2) }}</text></view>
         <view class="amount-row"><text>运费</text><text>¥{{ order.freightAmount?.toFixed(2) }}</text></view>
         <view class="amount-row" v-if="order.couponAmount > 0"><text>优惠券抵扣</text><text class="discount">-¥{{ order.couponAmount?.toFixed(2) }}</text></view>
@@ -178,7 +187,10 @@ function formatTime(t?: string) {
 
       <!-- 订单时间线 -->
       <view class="card">
-        <view class="card-title">📋 订单信息</view>
+        <view class="card-title">
+          <uni-icons type="list" size="18" color="#FF5000" />
+          <text>订单信息</text>
+        </view>
         <view class="timeline">
           <view class="tl-item" :class="{ done: order.createTime }">
             <view class="tl-dot"/><view class="tl-content"><text class="tl-label">下单时间</text><text class="tl-time">{{ formatTime(order.createTime) }}</text></view>
@@ -197,7 +209,10 @@ function formatTime(t?: string) {
 
       <!-- 订单备注 -->
       <view class="card" v-if="order.remark">
-        <view class="card-title">📝 订单备注</view>
+        <view class="card-title">
+          <uni-icons type="compose" size="18" color="#FF5000" />
+          <text>订单备注</text>
+        </view>
         <text class="remark-text">{{ order.remark }}</text>
       </view>
 
@@ -216,7 +231,9 @@ function formatTime(t?: string) {
     <view class="ps-sheet" v-if="showPaySheet">
       <view class="ps-hd"><text>选择支付方式</text><text class="ps-amt">¥{{ order?.payAmount?.toFixed(2) }}</text></view>
       <view class="ps-item" v-for="m in payMethods" :key="m.value" @click="doPay(m.value)">
-        <text class="ps-icon">{{ m.icon }}</text><text class="ps-label">{{ m.label }}</text><text class="ps-ar">›</text>
+        <uni-icons :type="m.icon" size="24" :color="m.value===3?'#FF9000':m.value===1?'#1677FF':'#07C160'" />
+        <text class="ps-label">{{ m.label }}</text>
+        <uni-icons type="right" size="16" color="#ccc" />
       </view>
       <button class="ps-close" @click="showPaySheet = false">取消</button>
     </view>
@@ -232,7 +249,7 @@ function formatTime(t?: string) {
 .order-no { font-size: 24rpx; color: rgba(255,255,255,.8); display: block; margin-top: 8rpx; }
 
 .card { background: #fff; margin: 16rpx 0; padding: 24rpx; }
-.card-title { font-size: 28rpx; font-weight: 600; color: #333; margin-bottom: 16rpx; }
+.card-title { display: flex; align-items: center; gap: 12rpx; font-size: 28rpx; font-weight: 600; color: #333; margin-bottom: 16rpx; }
 
 .addr-info { padding-left: 8rpx; }
 .addr-top { display: flex; gap: 20rpx; margin-bottom: 8rpx; }

@@ -53,7 +53,7 @@ onReachBottom(() => loadFavorites())
 <template>
   <view class="fav">
     <view v-if="!favorites.length && !loading" class="empty">
-      <text class="empty-icon">⭐</text>
+      <uni-icons type="star" size="60" color="#ccc" />
       <text class="empty-text">还没有收藏的笔记</text>
     </view>
 

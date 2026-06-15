@@ -8,6 +8,17 @@ const userStore = useUserStore()
 const showAdmin = ref(false)
 
 const sbh = uni.getSystemInfoSync().statusBarHeight || 0
+
+const iconList = [
+  { n: '秒杀', i: 'fire' },
+  { n: '会员', i: 'vip' },
+  { n: '百补', i: 'gift' },
+  { n: '社区', i: 'chat' },
+  { n: '直播', i: 'videocam' },
+  { n: '领券', i: 'wallet' },
+  { n: '新品', i: 'shop' },
+  { n: '收藏', i: 'star' }
+]
 const banners = ref<Banner[]>([])
 const products = ref<ProductDetail[]>([])
 const loading = ref(true)
@@ -58,7 +69,19 @@ const iconNav: Record<string, () => void> = {
 <template>
   <view class="hp">
     <view class="nav" :style="{ paddingTop: sbh + 'px' }">
-      <view class="nav-inner"><text class="logo">ShopMax</text><view class="search-box" @click="goSearch"><text>🔍 搜索商品</text></view><text class="cart-icon" v-if="userStore.isAdmin||userStore.isStore" @click="showAdmin=true">⚙️</text><text class="cart-icon" @click="goCart">🛒</text></view>
+      <view class="nav-inner">
+        <text class="logo">ShopMax</text>
+        <view class="search-box" @click="goSearch">
+          <uni-icons type="search" size="16" color="#999" />
+          <text class="search-text">搜索商品</text>
+        </view>
+        <view class="cart-icon" v-if="userStore.isAdmin||userStore.isStore" @click="showAdmin=true">
+          <uni-icons type="gear" size="24" color="#fff" />
+        </view>
+        <view class="cart-icon" @click="goCart">
+          <uni-icons type="cart" size="24" color="#fff" />
+        </view>
+      </view>
     </view>
     <scroll-view scroll-y class="main" refresher-enabled :refresher-triggered="refreshing" @refresherrefresh="onRefresh" @scrolltolower="onLoadMore">
       <swiper class="banner" circular autoplay :interval="3000" v-if="banners.length">
@@ -67,8 +90,11 @@ const iconNav: Record<string, () => void> = {
         </swiper-item>
       </swiper>
       <view class="icons">
-        <view class="ic" v-for="item in [{n:'秒杀',i:'⚡'},{n:'会员',i:'👑'},{n:'百补',i:'🔥'},{n:'社区',i:'💬'},{n:'直播',i:'📺'},{n:'领券',i:'🎫'},{n:'新品',i:'📦'},{n:'收藏',i:'⭐'}]" :key="item.n" @click="iconNav[item.n]?.()">
-          <view class="ic-circle"><text>{{ item.i }}</text></view><text class="ic-label">{{ item.n }}</text>
+        <view class="ic" v-for="item in iconList" :key="item.n" @click="iconNav[item.n]?.()">
+          <view class="ic-circle">
+            <uni-icons :type="item.i" size="24" color="#FF5000" />
+          </view>
+          <text class="ic-label">{{ item.n }}</text>
         </view>
       </view>
       <view class="skel-grid" v-if="loading && !products.length">
@@ -93,14 +119,46 @@ const iconNav: Record<string, () => void> = {
       <view class="admin-hd">
         <image :src="userStore.userInfo?.avatar||'/api/v1/files/default/avatar'" class="admin-av"/>
         <view><text class="admin-nm">{{ userStore.userName }}</text><text class="admin-rl">{{ userStore.isAdmin?'管理员':'店家' }}</text></view>
-        <text class="admin-close" @click="showAdmin=false">✕</text>
+        <view class="admin-close" @click="showAdmin=false">
+          <uni-icons type="close" size="20" color="#ccc" />
+        </view>
       </view>
       <view class="admin-menu">
-        <view class="admin-mi" v-if="userStore.isAdmin" @click="showAdmin=false;goPage('/pages/user/index')"><text>👥 用户管理</text><text class="ar">›</text></view>
-        <view class="admin-mi" @click="showAdmin=false;goPage('/pages/order/list')"><text>📋 订单管理</text><text class="ar">›</text></view>
-        <view class="admin-mi" v-if="userStore.isAdmin" @click="showAdmin=false;goPage('/pages/user/store-apply')"><text>🏪 入驻审核</text><text class="ar">›</text></view>
-        <view class="admin-mi" @click="showAdmin=false;goPage('/pages/user/profile')"><text>✏️ 个人资料</text><text class="ar">›</text></view>
-        <view class="admin-mi" @click="showAdmin=false;goPage('/pages/user/setting')"><text>⚙️ 设置</text><text class="ar">›</text></view>
+        <view class="admin-mi" v-if="userStore.isAdmin" @click="showAdmin=false;goPage('/pages/user/index')">
+          <view class="admin-mi-left">
+            <uni-icons type="person" size="20" color="#666" />
+            <text>用户管理</text>
+          </view>
+          <uni-icons type="right" size="16" color="#ccc" />
+        </view>
+        <view class="admin-mi" @click="showAdmin=false;goPage('/pages/order/list')">
+          <view class="admin-mi-left">
+            <uni-icons type="list" size="20" color="#666" />
+            <text>订单管理</text>
+          </view>
+          <uni-icons type="right" size="16" color="#ccc" />
+        </view>
+        <view class="admin-mi" v-if="userStore.isAdmin" @click="showAdmin=false;goPage('/pages/user/store-apply')">
+          <view class="admin-mi-left">
+            <uni-icons type="shop" size="20" color="#666" />
+            <text>入驻审核</text>
+          </view>
+          <uni-icons type="right" size="16" color="#ccc" />
+        </view>
+        <view class="admin-mi" @click="showAdmin=false;goPage('/pages/user/profile')">
+          <view class="admin-mi-left">
+            <uni-icons type="compose" size="20" color="#666" />
+            <text>个人资料</text>
+          </view>
+          <uni-icons type="right" size="16" color="#ccc" />
+        </view>
+        <view class="admin-mi" @click="showAdmin=false;goPage('/pages/user/setting')">
+          <view class="admin-mi-left">
+            <uni-icons type="gear" size="20" color="#666" />
+            <text>设置</text>
+          </view>
+          <uni-icons type="right" size="16" color="#ccc" />
+        </view>
       </view>
     </view>
   </view>
@@ -110,8 +168,9 @@ const iconNav: Record<string, () => void> = {
 .nav { background: linear-gradient(90deg,#FF5000,#FF9000); }
 .nav-inner { display: flex; align-items: center; padding: 10rpx 20rpx; gap: 16rpx; height: 80rpx; }
 .logo { font-size: 36rpx; font-weight: 800; color: #fff; }
-.search-box { flex: 1; height: 60rpx; background: rgba(255,255,255,.9); border-radius: 30rpx; display: flex; align-items: center; padding: 0 20rpx; font-size: 24rpx; color: #999; }
-.cart-icon { font-size: 36rpx; }
+.search-box { flex: 1; height: 60rpx; background: rgba(255,255,255,.9); border-radius: 30rpx; display: flex; align-items: center; padding: 0 20rpx; gap: 8rpx; }
+.search-text { font-size: 24rpx; color: #999; }
+.cart-icon { display: flex; align-items: center; justify-content: center; }
 .main { flex: 1; }
 .banner { height: 300rpx; } .b-img { width: 100%; height: 100%; }
 .icons { display: flex; flex-wrap: wrap; padding: 20rpx 16rpx; background: #fff; margin-bottom: 12rpx; }
@@ -137,5 +196,7 @@ const iconNav: Record<string, () => void> = {
 .admin-ol{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:500}
 .admin-pop{position:fixed;bottom:0;left:0;right:0;background:#fff;border-radius:24rpx 24rpx 0 0;padding:28rpx;z-index:501}
 .admin-hd{display:flex;align-items:center;gap:16rpx;margin-bottom:24rpx}.admin-av{width:64rpx;height:64rpx;border-radius:50%;background:#eee}.admin-nm{font-size:30rpx;font-weight:600;display:block}.admin-rl{font-size:22rpx;color:#999}.admin-close{font-size:36rpx;color:#ccc;margin-left:auto}
-.admin-menu{border-top:1rpx solid #f0f0f0}.admin-mi{display:flex;justify-content:space-between;padding:24rpx 0;font-size:28rpx;border-bottom:1rpx solid #f5f5f5}
+.admin-menu{border-top:1rpx solid #f0f0f0}
+.admin-mi{display:flex;justify-content:space-between;align-items:center;padding:24rpx 0;font-size:28rpx;border-bottom:1rpx solid #f5f5f5}
+.admin-mi-left{display:flex;align-items:center;gap:16rpx}
 </style>

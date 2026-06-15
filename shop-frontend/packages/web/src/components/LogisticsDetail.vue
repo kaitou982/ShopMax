@@ -5,7 +5,7 @@
  */
 import { ref, shallowRef, onUnmounted, watch, nextTick } from 'vue'
 import { NButton, NIcon, NSpin, NEmpty } from 'naive-ui'
-import { LocationOutline } from '@vicons/ionicons5'
+import { LocationOutline, CubeOutline, ArrowForwardOutline } from '@vicons/ionicons5'
 
 defineOptions({ name: 'LogisticsDetail' })
 
@@ -177,7 +177,7 @@ const initMap = async () => {
         mapInstance.value.add(new AMap.Marker({
           position: pos,
           title: l.senderAddress,
-          content: buildMarkerHtml('📦 发件地', '#67C23A', l.senderAddress),
+          content: buildMarkerHtml('发件地', '#67C23A', l.senderAddress),
           offset: new AMap.Pixel(-30, -50)
         }))
       })
@@ -190,7 +190,7 @@ const initMap = async () => {
         mapInstance.value.add(new AMap.Marker({
           position: pos,
           title: l.receiverAddress,
-          content: buildMarkerHtml('📍 收件地', '#ff4444', l.receiverAddress),
+          content: buildMarkerHtml('收件地', '#ff4444', l.receiverAddress),
           offset: new AMap.Pixel(-30, -50)
         }))
       })
@@ -307,7 +307,7 @@ const addTruckMarker = (
     const pos = new AMap.LngLat(lnglat[0], lnglat[1])
     mapInstance.value.add(new AMap.Marker({
       position: pos,
-      content: `<div style="display:flex;flex-direction:column;align-items:center;animation:bounce 1s infinite;"><div style="background:#FF9900;color:white;padding:4px 8px;border-radius:6px;font-size:12px;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,0.2);">🚚 ${label}</div></div><style>@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}</style>`,
+      content: `<div style="display:flex;flex-direction:column;align-items:center;animation:bounce 1s infinite;"><div style="background:#FF9900;color:white;padding:4px 8px;border-radius:6px;font-size:12px;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,0.2);">${label}</div></div><style>@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}</style>`,
       offset: new AMap.Pixel(-20, -40),
       zIndex: 100
     }))
@@ -415,13 +415,19 @@ const formatTraceTime = (time: string) => {
       <!-- 地址信息卡片 -->
       <div class="address-cards" v-if="logistics">
         <div class="addr-card sender">
-          <div class="addr-label">📦 发件地址</div>
+          <div class="addr-label">
+            <n-icon :size="16" color="#67C23A"><CubeOutline /></n-icon>
+            发件地址
+          </div>
           <div class="addr-name">{{ logistics.senderName }} {{ logistics.senderPhone }}</div>
           <div class="addr-text">{{ logistics.senderAddress }}</div>
         </div>
-        <div class="addr-arrow">→</div>
+        <n-icon :size="20" color="#c0c4cc"><ArrowForwardOutline /></n-icon>
         <div class="addr-card receiver">
-          <div class="addr-label">📍 收件地址</div>
+          <div class="addr-label">
+            <n-icon :size="16" color="#ff4444"><LocationOutline /></n-icon>
+            收件地址
+          </div>
           <div class="addr-name">{{ logistics.receiverName }} {{ logistics.receiverPhone }}</div>
           <div class="addr-text">{{ logistics.receiverAddress }}</div>
         </div>
@@ -493,7 +499,7 @@ const formatTraceTime = (time: string) => {
     &.sender { border-left: 3px solid #67C23A; }
     &.receiver { border-left: 3px solid #ff4444; }
 
-    .addr-label { font-size: 13px; font-weight: 600; color: #303133; margin-bottom: 4px; }
+    .addr-label { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: #303133; margin-bottom: 4px; }
     .addr-name { font-size: 13px; color: #606266; margin-bottom: 2px; }
     .addr-text { font-size: 12px; color: #909399; word-break: break-all; }
   }

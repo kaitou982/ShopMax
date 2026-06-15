@@ -4,6 +4,8 @@
  * 讲解中商品自动弹出浮窗
  */
 import { ref, computed } from 'vue'
+import { NIcon } from 'naive-ui'
+import { CloseOutline, CubeOutline } from '@vicons/ionicons5'
 import type { LiveProduct } from '@shop/shared'
 
 defineOptions({ name: 'LiveProductFloat' })
@@ -33,13 +35,13 @@ const discount = computed(() => {
     <div v-if="visible && product" class="live-product-float">
       <div class="live-product-float__header">
         <span class="live-product-float__badge">讲解中</span>
-        <button class="live-product-float__close" @click="emit('close')">✕</button>
+        <n-icon :size="14" color="#888" class="live-product-float__close" @click="emit('close')"><CloseOutline /></n-icon>
       </div>
 
       <div class="live-product-float__content">
         <div class="live-product-float__image">
           <img v-if="product.productImage" :src="product.productImage" :alt="product.productName" />
-          <span v-else>📦</span>
+          <n-icon v-else :size="28" color="#ffa726"><CubeOutline /></n-icon>
         </div>
         <div class="live-product-float__info">
           <div class="live-product-float__name">{{ product.productName }}</div>

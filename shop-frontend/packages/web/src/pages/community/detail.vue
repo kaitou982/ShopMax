@@ -3,6 +3,8 @@ defineOptions({ name: 'NoteDetailPage' })
 
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { NIcon } from 'naive-ui'
+import { ArrowBackOutline, HeartOutline, Heart, StarOutline, Star, ChatbubbleOutline, EyeOutline } from '@vicons/ionicons5'
 import { communityApi, type NoteDetailResponse, type CommentResponse } from '@shop/shared'
 
 const route = useRoute()
@@ -65,7 +67,10 @@ const reply = (c: CommentResponse) => {
 
 <template>
   <div class="nd-page">
-    <button class="nd-back" @click="router.back()">← 返回社区</button>
+    <button class="nd-back" @click="router.back()">
+      <n-icon :size="16"><ArrowBackOutline /></n-icon>
+      返回社区
+    </button>
 
     <div v-if="loading" class="nd-loading">加载中...</div>
 
@@ -106,13 +111,21 @@ const reply = (c: CommentResponse) => {
       <!-- 互动栏 -->
       <div class="nd-actions">
         <button class="nd-act" :class="{ active: note.isLiked }" @click="toggleLike">
-          {{ note.isLiked ? '❤️' : '🤍' }} {{ note.likeCount }}
+          <n-icon :size="18" :color="note.isLiked ? '#FF3B3B' : '#666'"><component :is="note.isLiked ? Heart : HeartOutline" /></n-icon>
+          {{ note.likeCount }}
         </button>
         <button class="nd-act" :class="{ active: note.isFavorited }" @click="toggleFavorite">
-          {{ note.isFavorited ? '⭐' : '☆' }} {{ note.favoriteCount }}
+          <n-icon :size="18" :color="note.isFavorited ? '#FF9000' : '#666'"><component :is="note.isFavorited ? Star : StarOutline" /></n-icon>
+          {{ note.favoriteCount }}
         </button>
-        <span class="nd-act">💬 {{ note.commentCount }}</span>
-        <span class="nd-act">👁 {{ note.viewCount }}</span>
+        <span class="nd-act">
+          <n-icon :size="18" color="#666"><ChatbubbleOutline /></n-icon>
+          {{ note.commentCount }}
+        </span>
+        <span class="nd-act">
+          <n-icon :size="18" color="#666"><EyeOutline /></n-icon>
+          {{ note.viewCount }}
+        </span>
       </div>
 
       <!-- 评论区 -->
@@ -153,6 +166,7 @@ const reply = (c: CommentResponse) => {
 .nd-page { max-width: 720px; }
 
 .nd-back {
+  display: inline-flex; align-items: center; gap: 6px;
   padding: 6px 16px; border: 1px solid $border-color; background: #fff;
   border-radius: 18px; font-size: $font-size-sm; cursor: pointer;
   color: $text-secondary; margin-bottom: $spacing-lg;

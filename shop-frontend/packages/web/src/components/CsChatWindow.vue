@@ -2,6 +2,8 @@
 defineOptions({ name: 'CsChatWindow' })
 
 import { ref, nextTick, onMounted, onUnmounted } from 'vue'
+import { NIcon } from 'naive-ui'
+import { ChatbubbleEllipsesOutline, CloseOutline } from '@vicons/ionicons5'
 import { csApi, type CsMessage, type CsSession } from '@shop/shared'
 
 interface Emits {
@@ -54,7 +56,7 @@ const loadMessages = async () => {
     const list = page.records || []
     list.forEach(m => seenIds.add(m.id))
     messages.value = list
-    scrollToBottom()
+    await scrollToBottom()
   } catch (e) {
     console.error('加载历史消息失败:', e)
   }
@@ -188,8 +190,11 @@ onUnmounted(() => { ws?.close(); ws = null })
 <template>
   <div class="cs-chat-window">
     <div class="cs-header">
-      <span>💬 智能客服</span>
-      <button class="cs-close" @click="emit('close')">✕</button>
+      <span>
+        <n-icon :size="18" color="#fff"><ChatbubbleEllipsesOutline /></n-icon>
+        智能客服
+      </span>
+      <n-icon :size="20" color="#fff" class="cs-close" @click="emit('close')"><CloseOutline /></n-icon>
     </div>
 
     <div class="cs-messages" ref="messagesEl">
@@ -263,10 +268,11 @@ onUnmounted(() => { ws?.close(); ws = null })
   align-items: center;
   justify-content: space-between;
   padding: 14px 16px;
-  background: #4f46e5;
+  background: #FF8F1F;
   color: #fff;
   font-size: 15px;
   font-weight: 600;
+  span { display: flex; align-items: center; gap: 8px; }
 }
 
 .cs-close {
@@ -311,9 +317,9 @@ onUnmounted(() => { ws?.close(); ws = null })
   cursor: pointer;
   transition: all 0.2s;
   &:hover {
-    background: #4f46e5;
+    background: #FF8F1F;
     color: #fff;
-    border-color: #4f46e5;
+    border-color: #FF8F1F;
   }
 }
 
@@ -324,7 +330,7 @@ onUnmounted(() => { ws?.close(); ws = null })
 .cs-msg-user {
   justify-content: flex-end;
   .cs-bubble {
-    background: #4f46e5;
+    background: #FF8F1F;
     color: #fff;
     border-radius: 16px 16px 4px 16px;
   }
@@ -376,12 +382,12 @@ onUnmounted(() => { ws?.close(); ws = null })
   border-radius: 8px;
   font-size: 14px;
   outline: none;
-  &:focus { border-color: #4f46e5; }
+  &:focus { border-color: #FF8F1F; }
 }
 
 .cs-send-btn {
   padding: 8px 18px;
-  background: #4f46e5;
+  background: #FF8F1F;
   color: #fff;
   border: none;
   border-radius: 8px;
@@ -389,6 +395,6 @@ onUnmounted(() => { ws?.close(); ws = null })
   cursor: pointer;
   white-space: nowrap;
   &:disabled { opacity: 0.5; cursor: not-allowed; }
-  &:not(:disabled):hover { background: #4338ca; }
+  &:not(:disabled):hover { background: #FF8F1F; }
 }
 </style>

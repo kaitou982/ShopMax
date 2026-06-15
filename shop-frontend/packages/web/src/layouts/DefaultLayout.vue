@@ -3,6 +3,8 @@ defineOptions({ name: 'DefaultLayout' })
 
 import { ref, watch, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { NIcon } from 'naive-ui'
+import { SearchOutline, FlameOutline, CartOutline, ListOutline, ChevronDownOutline, HomeOutline, CreateOutline, LocationOutline, LogOutOutline, ArrowUpOutline, ChatbubbleEllipsesOutline, CloseOutline } from '@vicons/ionicons5'
 import { categoryApi, searchApi, type Category, type SuggestResponse } from '@shop/shared'
 import { useUserStore, useCartStore } from '@/stores'
 import CsChatWindow from '@/components/CsChatWindow.vue'
@@ -88,15 +90,17 @@ const showChatWindow = ref(false)
             placeholder="搜索商品、品牌、分类..." @keyup.enter="onSearch"
             @focus="showSearchSuggest = true"
           />
-          <button class="search-btn" @click="onSearch">🔍</button>
+          <button class="search-btn" @click="onSearch">
+            <n-icon :size="18"><SearchOutline /></n-icon>
+          </button>
           <!-- 搜索建议下拉 -->
           <div class="suggest-dropdown" v-if="showSearchSuggest && (suggestData.products.length || suggestData.hotWords.length)">
             <div v-for="p in suggestData.products" :key="p" class="suggest-item" @mousedown.prevent="onSuggestSelect(p)">
-              <span class="suggest-icon">📱</span>
+              <n-icon :size="16" class="suggest-icon"><SearchOutline /></n-icon>
               <span class="suggest-text">{{ p }}</span>
             </div>
             <div v-for="h in suggestData.hotWords" :key="'hot-'+h" class="suggest-item hot" @mousedown.prevent="onSuggestSelect(h)">
-              <span class="suggest-icon">🔥</span>
+              <n-icon :size="16" class="suggest-icon"><FlameOutline /></n-icon>
               <span class="suggest-text">热搜：{{ h }}</span>
             </div>
           </div>
@@ -104,14 +108,18 @@ const showChatWindow = ref(false)
         <nav class="nav-links">
           <!-- User / Admin dropdown -->
           <span class="nav-link cart-link" @mouseenter="showCartPanel = cartStore.cartList.length > 0" style="margin-top: 10px">
-            🛒 购物车
+            <n-icon :size="18"><CartOutline /></n-icon>
+            购物车
             <span class="cart-badge" v-if="cartStore.totalCount">{{ cartStore.totalCount }}</span>
           </span>
-          <router-link to="/order/list" class="nav-link" style="margin-top: 10px">📋 订单</router-link>
+          <router-link to="/order/list" class="nav-link" style="margin-top: 10px">
+            <n-icon :size="18"><ListOutline /></n-icon>
+            订单
+          </router-link>
           <span class="nav-link user-menu" v-if="userStore.isLoggedIn" @click="showUserMenu = !showUserMenu">
             <img :src="userStore.userInfo?.avatar || '/default-avatar.svg'" class="nav-avatar" @error="$event.target.src='/default-avatar.svg'" />
             <span class="nav-nickname">{{ userStore.userName || '我的' }}</span>
-            <span class="nav-arrow" :class="{ rotated: showUserMenu }">▾</span>
+            <n-icon :size="14" class="nav-arrow" :class="{ rotated: showUserMenu }"><ChevronDownOutline /></n-icon>
           </span>
           <router-link to="/login" class="nav-link" v-else>登录</router-link>
         </nav>
@@ -129,7 +137,7 @@ const showChatWindow = ref(false)
             <div class="cart-panel-name">{{ item.name }}</div>
             <div class="cart-panel-price">¥{{ item.price }} × {{ item.quantity }}</div>
           </div>
-          <span class="cart-panel-remove" @click="cartStore.removeFromCart(item.id)">✕</span>
+          <n-icon :size="16" class="cart-panel-remove" @click="cartStore.removeFromCart(item.id)"><CloseOutline /></n-icon>
         </div>
       </div>
       <div class="cart-panel-empty" v-else>购物车为空</div>
@@ -146,13 +154,28 @@ const showChatWindow = ref(false)
         </div>
       </div>
       <div class="user-drop-menu">
-        <router-link to="/user" class="udm" @click="showUserMenu=false"><span class="udm-icon">🏠</span>个人中心</router-link>
-        <router-link to="/order/list" class="udm" @click="showUserMenu=false"><span class="udm-icon">📋</span>订单管理</router-link>
+        <router-link to="/user" class="udm" @click="showUserMenu=false">
+          <n-icon :size="18" class="udm-icon"><HomeOutline /></n-icon>
+          个人中心
+        </router-link>
+        <router-link to="/order/list" class="udm" @click="showUserMenu=false">
+          <n-icon :size="18" class="udm-icon"><ListOutline /></n-icon>
+          订单管理
+        </router-link>
         <div class="ud-divider" />
-        <router-link to="/user/profile" class="udm" @click="showUserMenu=false"><span class="udm-icon">✏️</span>编辑资料</router-link>
-        <router-link to="/user/address" class="udm" @click="showUserMenu=false"><span class="udm-icon">📍</span>收货地址</router-link>
+        <router-link to="/user/profile" class="udm" @click="showUserMenu=false">
+          <n-icon :size="18" class="udm-icon"><CreateOutline /></n-icon>
+          编辑资料
+        </router-link>
+        <router-link to="/user/address" class="udm" @click="showUserMenu=false">
+          <n-icon :size="18" class="udm-icon"><LocationOutline /></n-icon>
+          收货地址
+        </router-link>
         <div class="ud-divider" />
-        <a class="udm logout" @click="userStore.logout();showUserMenu=false;router.push('/login')"><span class="udm-icon">🚪</span>退出登录</a>
+        <a class="udm logout" @click="userStore.logout();showUserMenu=false;router.push('/login')">
+          <n-icon :size="18" class="udm-icon"><LogOutOutline /></n-icon>
+          退出登录
+        </a>
       </div>
     </div>
     <div class="user-drop-overlay" v-if="showUserMenu" @click="showUserMenu=false" />
@@ -205,9 +228,13 @@ const showChatWindow = ref(false)
     </footer>
 
     <!-- 回到顶部 -->
-    <button class="back-top-btn" v-if="showBackTop" @click="backToTop">↑</button>
+    <button class="back-top-btn" v-if="showBackTop" @click="backToTop">
+      <n-icon :size="20"><ArrowUpOutline /></n-icon>
+    </button>
     <!-- 客服悬浮 -->
-    <button class="cs-float-btn" @click="showChatWindow = !showChatWindow">💬</button>
+    <button class="cs-float-btn" @click="showChatWindow = !showChatWindow">
+      <n-icon :size="22"><ChatbubbleEllipsesOutline /></n-icon>
+    </button>
     <CsChatWindow v-if="showChatWindow" @close="showChatWindow = false" />
   </div>
 </template>

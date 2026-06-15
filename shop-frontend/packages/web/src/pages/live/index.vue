@@ -2,6 +2,8 @@
 defineOptions({ name: 'LivePage' })
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { NIcon } from 'naive-ui'
+import { EyeOutline, PersonOutline } from '@vicons/ionicons5'
 import { liveRoomApi, type LiveRoom } from '@shop/shared'
 
 const router = useRouter()
@@ -28,12 +30,15 @@ onMounted(async () => {
         <div class="lv-cover-wrap">
           <img :src="r.cover || '/api/v1/files/default/product'" class="lv-cover" />
           <span class="lv-status" :style="{ background: statusColors[r.status] }">{{ statusLabels[r.status] }}</span>
-          <span class="lv-viewers" v-if="r.status === 1">👁 {{ r.onlineCount }}</span>
+          <span class="lv-viewers" v-if="r.status === 1">
+            <n-icon :size="12" color="#fff"><EyeOutline /></n-icon>
+            {{ r.onlineCount }}
+          </span>
         </div>
         <div class="lv-body">
           <div class="lv-title">{{ r.title }}</div>
           <div class="lv-info">
-            <span class="lv-av">{{ r.anchorNickname?.[0] || '👤' }}</span>
+            <span class="lv-av">{{ r.anchorNickname?.[0] || '?' }}</span>
             <span>{{ r.anchorNickname || '主播' }}</span>
           </div>
         </div>
@@ -50,7 +55,7 @@ h2 { margin-bottom: 20px; }
 .lv-cover-wrap { position: relative; }
 .lv-cover { width: 100%; aspect-ratio: 16/10; object-fit: cover; background: #f5f5f5; }
 .lv-status { position: absolute; top: 8px; left: 8px; padding: 2px 10px; border-radius: 4px; font-size: 11px; color: #fff; font-weight: 600; }
-.lv-viewers { position: absolute; bottom: 8px; right: 8px; padding: 2px 8px; border-radius: 8px; font-size: 11px; color: #fff; background: rgba(0,0,0,.5); }
+.lv-viewers { position: absolute; bottom: 8px; right: 8px; padding: 2px 8px; border-radius: 8px; font-size: 11px; color: #fff; background: rgba(0,0,0,.5); display: flex; align-items: center; gap: 4px; }
 .lv-body { padding: 12px; }
 .lv-title { font-size: 14px; font-weight: 600; margin-bottom: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .lv-info { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #999; }

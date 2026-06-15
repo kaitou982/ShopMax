@@ -116,7 +116,7 @@ const initMapData = () => {
       width: 30,
       height: 30,
       callout: {
-        content: '📦 ' + (logistics.value.senderAddress || '发件地'),
+        content: '发件: ' + (logistics.value.senderAddress || '发件地'),
         display: 'ALWAYS',
         borderRadius: 4,
         padding: 4,
@@ -139,7 +139,7 @@ const initMapData = () => {
       width: 30,
       height: 30,
       callout: {
-        content: '📍 ' + (logistics.value.receiverAddress || '收件地'),
+        content: '收件: ' + (logistics.value.receiverAddress || '收件地'),
         display: 'ALWAYS',
         borderRadius: 4,
         padding: 4,
@@ -287,12 +287,18 @@ onMounted(() => {
     <!-- 地址卡片 -->
     <view class="addr-section" v-if="logistics">
       <view class="addr-card sender">
-        <text class="addr-label">📦 发件</text>
+        <view class="addr-label">
+          <uni-icons type="shop" size="14" color="#67C23A" />
+          <text>发件</text>
+        </view>
         <text class="addr-text">{{ logistics.senderAddress || '-' }}</text>
       </view>
-      <text class="addr-arrow">→</text>
+      <uni-icons type="right" size="16" color="#c0c4cc" />
       <view class="addr-card receiver">
-        <text class="addr-label">📍 收件</text>
+        <view class="addr-label">
+          <uni-icons type="location" size="14" color="#ff4444" />
+          <text>收件</text>
+        </view>
         <text class="addr-text">{{ logistics.receiverAddress || '-' }}</text>
       </view>
     </view>
@@ -326,9 +332,10 @@ onMounted(() => {
         </view>
         <view class="trace-content">
           <text class="trace-time">{{ formatTraceTime(trace.traceTime) }}</text>
-          <text class="trace-location" v-if="trace.location">
-            📍 {{ trace.location }}
-          </text>
+          <view class="trace-location" v-if="trace.location">
+            <uni-icons type="location" size="14" color="#909399" />
+            <text>{{ trace.location }}</text>
+          </view>
           <text class="trace-text">{{ trace.content }}</text>
         </view>
       </view>
@@ -416,6 +423,9 @@ onMounted(() => {
     }
 
     .addr-label {
+      display: flex;
+      align-items: center;
+      gap: 6rpx;
       font-size: 24rpx;
       font-weight: 600;
       margin-bottom: 6rpx;
@@ -426,12 +436,6 @@ onMounted(() => {
       color: #909399;
       word-break: break-all;
     }
-  }
-
-  .addr-arrow {
-    font-size: 32rpx;
-    color: #c0c4cc;
-    flex-shrink: 0;
   }
 }
 
@@ -506,6 +510,9 @@ onMounted(() => {
     }
 
     .trace-location {
+      display: flex;
+      align-items: center;
+      gap: 6rpx;
       font-size: 24rpx;
       color: #606266;
       margin-bottom: 8rpx;

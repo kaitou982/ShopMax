@@ -74,7 +74,10 @@ const submit = async () => {
       <text class="oca-detail">{{ address.fullAddress }}</text>
     </view>
     <view class="oc-addr empty" v-else @click="goAddress">
-      <text>点击选择收货地址 ›</text>
+      <view class="oc-addr-empty-content">
+        <text>点击选择收货地址</text>
+        <uni-icons type="right" size="16" color="#999" />
+      </view>
     </view>
     <view class="oc-items">
       <view class="oci" v-for="item in cartStore.selectedItems" :key="item.productId">
@@ -85,7 +88,10 @@ const submit = async () => {
     <view class="oc-row"><text>运费</text><text class="val">¥{{ freight }}</text></view>
     <view class="oc-row" @click="showCouponPicker = true">
       <text>优惠券</text>
-      <text class="val" :class="{selected:selectedCoupon}">{{ selectedCoupon ? '已选' : '选择 ›' }}</text>
+      <view class="oc-row-right" :class="{selected:selectedCoupon}">
+        <text class="val">{{ selectedCoupon ? '已选' : '选择' }}</text>
+        <uni-icons type="right" size="16" :color="selectedCoupon ? '#FF5000' : '#ccc'" />
+      </view>
     </view>
     <view class="oc-row"><text>优惠</text><text class="val" style="color:#FF5000">-¥{{ couponDiscount.toFixed(2) }}</text></view>
     <view class="oc-row b"><text>实付</text><text class="val" style="color:#FF5000;font-size:36rpx;font-weight:700">¥{{ finalPay.toFixed(2) }}</text></view>
@@ -93,7 +99,12 @@ const submit = async () => {
 
     <view class="cp-mask" v-if="showCouponPicker" @click="showCouponPicker = false"/>
     <view class="cp-sheet" v-if="showCouponPicker">
-      <view class="cp-hd"><text>选择优惠券</text><text class="cp-close" @click="showCouponPicker = false">✕</text></view>
+      <view class="cp-hd">
+        <text>选择优惠券</text>
+        <view class="cp-close" @click="showCouponPicker = false">
+          <uni-icons type="close" size="20" color="#999" />
+        </view>
+      </view>
       <view class="cp-empty" v-if="!availableCoupons.length"><text>暂无可用优惠券</text></view>
       <view class="cp-list" v-else>
         <view class="cp-card" v-for="c in availableCoupons" :key="c.id" @click="selectCoupon(c)">
@@ -110,6 +121,8 @@ const submit = async () => {
 <style scoped lang="scss">
 .oc-page { min-height:100vh;background:#f5f5f5;padding-bottom:120rpx }
 .oc-addr { padding:24rpx;background:#fff;margin-bottom:16rpx;&.empty{color:#999} }
+.oc-addr-empty-content { display:flex;align-items:center;gap:8rpx }
+.oc-row-right { display:flex;align-items:center;gap:8rpx;&.selected .val{color:#FF5000} }
 .oca-name { font-size:30rpx;font-weight:600;margin-right:20rpx }
 .oca-detail { font-size:26rpx;color:#666;display:block;margin-top:8rpx }
 .oc-items { background:#fff;margin-bottom:16rpx }

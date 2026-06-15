@@ -1,6 +1,8 @@
 <script setup lang="ts">defineOptions({ name: 'OrderConfirm' })
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { NIcon } from 'naive-ui'
+import { ChevronForwardOutline, CloseOutline } from '@vicons/ionicons5'
 import { orderApi, addressApi, couponApi, type AddressInfo, type CouponReceive } from '@shop/shared'
 import { useCartStore } from '@/stores'
 
@@ -100,7 +102,10 @@ const goAddress = () => router.push('/user')
 
     <!-- 地址 -->
     <div class="section" @click="goAddress">
-      <div class="section-title">收货地址 <span class="arrow">›</span></div>
+      <div class="section-title">
+        收货地址
+        <n-icon :size="20" color="#ccc"><ChevronForwardOutline /></n-icon>
+      </div>
       <div v-if="address" class="addr-card">
         <strong>{{ address.receiverName }}</strong> {{ address.receiverPhone }}
         <p>{{ address.fullAddress }}</p>
@@ -131,11 +136,11 @@ const goAddress = () => router.push('/user')
       <div v-if="selectedCoupon" class="coupon-selected">
         <span class="cs-name">{{ selectedCoupon.couponName }}</span>
         <span class="cs-discount">-¥{{ couponDiscount.toFixed(2) }}</span>
-        <span class="cs-remove" @click="removeCoupon">✕</span>
+        <n-icon :size="16" class="cs-remove" @click="removeCoupon"><CloseOutline /></n-icon>
       </div>
       <div v-else class="coupon-trigger" @click="showCouponPicker = !showCouponPicker">
         {{ availableCoupons.length ? availableCoupons.length + ' 张可用' : '暂无可用' }}
-        <span class="arrow">›</span>
+        <n-icon :size="16" color="#ccc"><ChevronForwardOutline /></n-icon>
       </div>
       <div class="coupon-list" v-if="showCouponPicker">
         <div v-if="!availableCoupons.length" class="coupon-empty">暂无可用优惠券</div>
@@ -155,11 +160,11 @@ const goAddress = () => router.push('/user')
       <div v-if="selectedCoupon && selectedCoupon.couponType !== 3" style="margin-top:12px">
         <div v-if="selectedCoupon2" class="coupon-selected">
           <span class="cs-name">{{ selectedCoupon2.couponName }}</span>
-          <span class="cs-remove" @click="removeCoupon2">✕</span>
+          <n-icon :size="16" class="cs-remove" @click="removeCoupon2"><CloseOutline /></n-icon>
         </div>
         <div v-else class="coupon-trigger" @click="showCouponPicker2 = !showCouponPicker2">
           + 叠加运费券或其他优惠
-          <span class="arrow">›</span>
+          <n-icon :size="16" color="#ccc"><ChevronForwardOutline /></n-icon>
         </div>
         <div class="coupon-list" v-if="showCouponPicker2">
           <div class="coupon-item" v-for="c in availableCoupons.filter(x => x.id !== selectedCoupon?.id)" :key="c.id" @click="selectCoupon2(c)">

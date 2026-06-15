@@ -179,7 +179,7 @@ onUnload(() => {
     <view class="live-room__header">
       <view class="live-room__anchor">
         <view class="live-room__avatar">
-          <text>{{ room?.anchorNickname?.[0] || '👤' }}</text>
+          <text>{{ room?.anchorNickname?.[0] || '?' }}</text>
         </view>
         <view class="live-room__info">
           <text class="live-room__name">{{ room?.anchorNickname || '主播' }}</text>
@@ -191,7 +191,10 @@ onUnload(() => {
           <view class="live-room__live-dot" />
           <text>LIVE</text>
         </view>
-        <text class="live-room__viewers">👁 {{ onlineCount }}</text>
+        <view class="live-room__viewers">
+          <uni-icons type="eye" size="14" color="#fff" />
+          <text>{{ onlineCount }}</text>
+        </view>
       </view>
     </view>
 
@@ -211,7 +214,9 @@ onUnload(() => {
     <view v-if="currentProduct" class="live-room__product-float">
       <view class="live-room__float-header">
         <text class="live-room__float-badge">讲解中</text>
-        <text class="live-room__float-close" @click="currentProduct = null">✕</text>
+        <view class="live-room__float-close" @click="currentProduct = null">
+          <uni-icons type="close" size="16" color="#888" />
+        </view>
       </view>
       <view class="live-room__float-content">
         <image
@@ -244,25 +249,33 @@ onUnload(() => {
         @confirm="handleSendDanmaku"
       />
       <view class="live-room__action-btn" @click="showProductList = !showProductList">
-        <text>🛒</text>
+        <uni-icons type="cart" size="24" color="#fff" />
         <view v-if="products.length" class="live-room__badge">
           <text>{{ products.length }}</text>
         </view>
       </view>
       <view class="live-room__action-btn" @click="handleLike">
-        <text>❤️</text>
+        <uni-icons type="heart-filled" size="24" color="#e74c3c" />
       </view>
       <view class="live-room__action-btn" @click="showGiftPanel = !showGiftPanel">
-        <text>🎁</text>
+        <uni-icons type="gift" size="24" color="#ffa726" />
       </view>
     </view>
 
     <!-- 礼物面板 -->
     <view v-if="showGiftPanel" class="live-room__gift-panel">
       <view class="live-room__gift-header">
-        <text class="live-room__gift-title">🎁 送礼物</text>
-        <text class="live-room__gift-balance">💰 余额: {{ coinBalance }} 币</text>
-        <text class="live-room__gift-close" @click="showGiftPanel = false">✕</text>
+        <view class="live-room__gift-title">
+          <uni-icons type="gift" size="20" color="#ffa726" />
+          <text>送礼物</text>
+        </view>
+        <view class="live-room__gift-balance">
+          <uni-icons type="wallet" size="16" color="#ffa726" />
+          <text>余额: {{ coinBalance }} 币</text>
+        </view>
+        <view class="live-room__gift-close" @click="showGiftPanel = false">
+          <uni-icons type="close" size="20" color="#888" />
+        </view>
       </view>
       <view class="live-room__gift-grid">
         <view
@@ -272,7 +285,7 @@ onUnload(() => {
           @click="handleSendGift(gift.id, 1)"
         >
           <image v-if="gift.icon" :src="gift.icon" class="live-room__gift-icon" mode="aspectFit" />
-          <text v-else class="live-room__gift-icon-text">🎁</text>
+          <uni-icons v-else type="gift" size="48" color="#ffa726" />
           <text class="live-room__gift-name">{{ gift.name }}</text>
           <text class="live-room__gift-price">{{ gift.price }} 币</text>
         </view>
@@ -283,7 +296,10 @@ onUnload(() => {
     <view v-if="showProductList" class="live-room__product-list">
       <view class="live-room__product-header">
         <text class="live-room__product-title">直播商品 ({{ products.length }})</text>
-        <text class="live-room__product-close" @click="showProductList = false">收起 ▼</text>
+        <view class="live-room__product-close" @click="showProductList = false">
+          <text>收起</text>
+          <uni-icons type="down" size="14" color="#888" />
+        </view>
       </view>
       <scroll-view scroll-y class="live-room__product-scroll">
         <view
@@ -407,6 +423,9 @@ onUnload(() => {
   }
 
   &__viewers {
+    display: flex;
+    align-items: center;
+    gap: 6rpx;
     font-size: 22rpx;
     color: #fff;
     background: rgba(0, 0, 0, 0.4);
@@ -614,12 +633,18 @@ onUnload(() => {
   }
 
   &__gift-title {
+    display: flex;
+    align-items: center;
+    gap: 8rpx;
     font-size: 28rpx;
     font-weight: 600;
     color: #fff;
   }
 
   &__gift-balance {
+    display: flex;
+    align-items: center;
+    gap: 6rpx;
     margin-left: auto;
     font-size: 22rpx;
     color: #ffa726;
@@ -627,8 +652,6 @@ onUnload(() => {
 
   &__gift-close {
     margin-left: 20rpx;
-    font-size: 28rpx;
-    color: #888;
   }
 
   &__gift-grid {
@@ -695,6 +718,9 @@ onUnload(() => {
   }
 
   &__product-close {
+    display: flex;
+    align-items: center;
+    gap: 4rpx;
     font-size: 22rpx;
     color: #888;
   }

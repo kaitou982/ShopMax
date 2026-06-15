@@ -8,9 +8,9 @@ const payingOrder = ref<OrderDetail | null>(null)
 const refundingId = ref<number | null>(null)
 
 const payMethods = [
-  { value: 3, label: '余额支付', icon: '💰' },
-  { value: 1, label: '支付宝', icon: '🔵' },
-  { value: 2, label: '微信支付', icon: '🟢' },
+  { value: 3, label: '余额支付', icon: 'wallet' },
+  { value: 1, label: '支付宝', icon: 'auth' },
+  { value: 2, label: '微信支付', icon: 'weixin' },
 ]
 
 onMounted(load)
@@ -101,7 +101,9 @@ async function refund(o: OrderDetail) {
     <view class="ps-sheet" v-if="showPaySheet">
       <view class="ps-hd"><text>选择支付方式</text><text class="ps-amt">¥{{ payingOrder?.payAmount.toFixed(2) }}</text></view>
       <view class="ps-item" v-for="m in payMethods" :key="m.value" @click="doPay(m.value)">
-        <text class="ps-icon">{{m.icon}}</text><text class="ps-label">{{m.label}}</text><text class="ps-ar">›</text>
+        <uni-icons :type="m.icon" size="24" :color="m.value===3?'#FF9000':m.value===1?'#1677FF':'#07C160'" />
+        <text class="ps-label">{{m.label}}</text>
+        <uni-icons type="right" size="16" color="#ccc" />
       </view>
       <button class="ps-close" @click="showPaySheet=false">取消</button>
     </view>

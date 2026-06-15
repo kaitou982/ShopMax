@@ -4,6 +4,8 @@
  * 抖音风格礼物选择面板
  */
 import { ref, onMounted } from 'vue'
+import { NIcon } from 'naive-ui'
+import { GiftOutline, WalletOutline, CloseOutline } from '@vicons/ionicons5'
 import { liveRoomApi } from '@shop/shared'
 import type { Gift } from '@shop/shared'
 
@@ -68,9 +70,15 @@ onMounted(() => {
 <template>
   <div class="live-gift-panel">
     <div class="live-gift-panel__header">
-      <span class="live-gift-panel__title">🎁 送礼物</span>
-      <span class="live-gift-panel__balance">💰 余额: {{ coinBalance }} 币</span>
-      <button class="live-gift-panel__close" @click="emit('close')">✕</button>
+      <span class="live-gift-panel__title">
+        <n-icon :size="18" color="#ffa726"><GiftOutline /></n-icon>
+        送礼物
+      </span>
+      <span class="live-gift-panel__balance">
+        <n-icon :size="14" color="#ffa726"><WalletOutline /></n-icon>
+        余额: {{ coinBalance }} 币
+      </span>
+      <n-icon :size="18" color="#888" class="live-gift-panel__close" @click="emit('close')"><CloseOutline /></n-icon>
     </div>
 
     <div class="live-gift-panel__grid">
@@ -83,7 +91,7 @@ onMounted(() => {
       >
         <div class="live-gift-panel__icon">
           <img v-if="gift.icon" :src="gift.icon" :alt="gift.name" />
-          <span v-else>🎁</span>
+          <n-icon v-else :size="28" color="#ffa726"><GiftOutline /></n-icon>
         </div>
         <div class="live-gift-panel__name">{{ gift.name }}</div>
         <div class="live-gift-panel__price">{{ gift.price }} 币</div>
@@ -128,11 +136,17 @@ onMounted(() => {
   }
 
   &__title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
     font-size: 16px;
     font-weight: 600;
   }
 
   &__balance {
+    display: flex;
+    align-items: center;
+    gap: 6px;
     margin-left: auto;
     font-size: 13px;
     color: #ffa726;

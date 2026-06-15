@@ -1,7 +1,8 @@
 <script setup lang="ts">defineOptions({ name: 'CartPage' })
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { useMessage, useDialog } from 'naive-ui'
+import { NIcon, useMessage, useDialog } from 'naive-ui'
+import { CartOutline, CloseOutline } from '@vicons/ionicons5'
 import { useCartStore } from '@/stores'
 
 const router = useRouter()
@@ -36,7 +37,7 @@ const goHome = () => router.push('/')
     <h2>购物车 <span class="count" v-if="cartStore.totalCount">({{ cartStore.totalCount }})</span></h2>
 
     <div v-if="!cartStore.cartList.length" class="empty">
-      <p class="empty-icon">🛒</p>
+      <n-icon :size="60" color="#ccc" class="empty-icon"><CartOutline /></n-icon>
       <p>购物车空空如也</p>
       <button class="empty-btn" @click="goHome">去逛逛</button>
     </div>
@@ -65,7 +66,7 @@ const goHome = () => router.push('/')
             <button @click="cartStore.updateQuantity(item.id, item.quantity + 1)">+</button>
           </div>
           <span class="item-subtotal">¥{{ (item.price * item.quantity).toFixed(2) }}</span>
-          <button class="item-remove" @click="cartStore.removeFromCart(item.id)">✕</button>
+          <n-icon :size="18" class="item-remove" @click="cartStore.removeFromCart(item.id)"><CloseOutline /></n-icon>
         </div>
       </div>
 

@@ -4,6 +4,8 @@
  */
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { NIcon } from 'naive-ui'
+import { EyeOutline, CartOutline, HeartOutline, GiftOutline, ChevronDownOutline, CubeOutline } from '@vicons/ionicons5'
 import { liveRoomApi } from '@shop/shared'
 import type { LiveRoom, LiveProduct } from '@shop/shared'
 import { useUserStore } from '../../stores'
@@ -144,14 +146,17 @@ onUnmounted(() => {
       <div class="live-room__header">
         <div class="live-room__anchor">
           <div class="live-room__avatar">
-            {{ room?.anchorNickname?.[0] || '👤' }}
+            {{ room?.anchorNickname?.[0] || '?' }}
           </div>
           <div class="live-room__info">
             <div class="live-room__name">{{ room?.anchorNickname || '主播' }}</div>
             <div class="live-room__fans">粉丝 {{ room?.totalViewCount || 0 }}</div>
           </div>
         </div>
-        <span class="live-room__viewers">👁 {{ onlineCount }}</span>
+        <span class="live-room__viewers">
+          <n-icon :size="14" color="#fff"><EyeOutline /></n-icon>
+          {{ onlineCount }}
+        </span>
       </div>
 
       <!-- 商品浮窗 -->
@@ -172,10 +177,15 @@ onUnmounted(() => {
           @keyup.enter="handleSendDanmaku"
         />
         <button class="live-room__action-btn" @click="showProductList = !showProductList">
-          🛒 <span v-if="products.length" class="live-room__badge">{{ products.length }}</span>
+          <n-icon :size="20" color="#fff"><CartOutline /></n-icon>
+          <span v-if="products.length" class="live-room__badge">{{ products.length }}</span>
         </button>
-        <button class="live-room__action-btn" @click="handleLike">❤️</button>
-        <button class="live-room__action-btn" @click="showGiftPanel = !showGiftPanel">🎁</button>
+        <button class="live-room__action-btn" @click="handleLike">
+          <n-icon :size="20" color="#e74c3c"><HeartOutline /></n-icon>
+        </button>
+        <button class="live-room__action-btn" @click="showGiftPanel = !showGiftPanel">
+          <n-icon :size="20" color="#ffa726"><GiftOutline /></n-icon>
+        </button>
       </div>
     </div>
 
@@ -194,7 +204,10 @@ onUnmounted(() => {
       <div v-if="showProductList" class="live-room__product-list">
         <div class="live-room__product-header">
           <span>直播商品 ({{ products.length }})</span>
-          <button @click="showProductList = false">收起 ▼</button>
+          <button @click="showProductList = false">
+            收起
+            <n-icon :size="14" color="#888"><ChevronDownOutline /></n-icon>
+          </button>
         </div>
         <div class="live-room__product-items">
           <div
@@ -206,7 +219,7 @@ onUnmounted(() => {
           >
             <div class="live-room__product-image">
               <img v-if="product.productImage" :src="product.productImage" :alt="product.productName" />
-              <span v-else>📦</span>
+              <n-icon v-else :size="24" color="#ffa726"><CubeOutline /></n-icon>
             </div>
             <div class="live-room__product-info">
               <div v-if="product.status === 2" class="live-room__product-badge">讲解中</div>

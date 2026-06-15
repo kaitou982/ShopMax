@@ -151,10 +151,10 @@ const goBack = () => uni.navigateBack()
     <!-- 搜索栏 -->
     <view class="search-bar">
       <view class="back" @click="goBack">
-        <text>‹</text>
+        <uni-icons type="back" size="24" color="#333" />
       </view>
       <view class="search-input-wrap">
-        <text class="search-icon">🔍</text>
+        <uni-icons type="search" size="18" color="#999" />
         <input
           v-model="keyword"
           class="search-input"
@@ -163,7 +163,9 @@ const goBack = () => uni.navigateBack()
           @confirm="doSearch()"
           confirm-type="search"
         />
-        <text v-if="keyword" class="clear" @click="keyword = ''; searched = false">✕</text>
+        <view v-if="keyword" class="clear" @click="keyword = ''; searched = false">
+          <uni-icons type="clear" size="18" color="#999" />
+        </view>
       </view>
       <text class="search-btn" @click="doSearch()">搜索</text>
     </view>
@@ -173,7 +175,10 @@ const goBack = () => uni.navigateBack()
       <!-- 热门搜索 -->
       <view v-if="hotKeywords.length" class="section">
         <view class="section-hd">
-          <text class="section-title">🔥 热门搜索</text>
+          <view class="section-title">
+            <uni-icons type="fire" size="18" color="#FF5000" />
+            <text>热门搜索</text>
+          </view>
         </view>
         <view class="tags">
           <view
@@ -190,13 +195,18 @@ const goBack = () => uni.navigateBack()
       <!-- 搜索历史 -->
       <view v-if="history.length" class="section">
         <view class="section-hd">
-          <text class="section-title">🕐 搜索历史</text>
+          <view class="section-title">
+            <uni-icons type="calendar" size="18" color="#666" />
+            <text>搜索历史</text>
+          </view>
           <text class="section-action" @click="clearHistory">清空</text>
         </view>
         <view class="tags">
           <view v-for="h in history" :key="h" class="tag history-tag">
             <text @click="doSearch(h)">{{ h }}</text>
-            <text class="tag-del" @click.stop="removeHistory(h)">✕</text>
+            <view class="tag-del" @click.stop="removeHistory(h)">
+              <uni-icons type="closeempty" size="12" color="#ccc" />
+            </view>
           </view>
         </view>
       </view>
@@ -210,7 +220,7 @@ const goBack = () => uni.navigateBack()
         class="suggest-item"
         @click="doSearch(s)"
       >
-        <text class="suggest-icon">📱</text>
+        <uni-icons type="search" size="18" color="#999" />
         <text class="suggest-text">{{ s }}</text>
       </view>
       <view
@@ -219,7 +229,7 @@ const goBack = () => uni.navigateBack()
         class="suggest-item hot"
         @click="doSearch(h)"
       >
-        <text class="suggest-icon">🔥</text>
+        <uni-icons type="fire" size="18" color="#FF5000" />
         <text class="suggest-text">热搜：{{ h }}</text>
       </view>
       <view v-if="!suggestions.length && !hotSuggests.length" class="suggest-empty">
@@ -288,7 +298,7 @@ const goBack = () => uni.navigateBack()
 
 .section { background: #fff; margin-top: 16rpx; padding: 20rpx 24rpx;
   .section-hd { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16rpx; }
-  .section-title { font-size: 28rpx; font-weight: 600; color: #333; }
+  .section-title { display: flex; align-items: center; gap: 8rpx; font-size: 28rpx; font-weight: 600; color: #333; }
   .section-action { font-size: 24rpx; color: #999; }
 }
 

@@ -64,7 +64,7 @@ function getFilteredReviews() {
 }
 
 function renderStars(rating: number) {
-  return '★'.repeat(rating) + '☆'.repeat(5 - rating)
+  return rating
 }
 
 function parseImages(images?: string): string[] {
@@ -112,10 +112,14 @@ onReachBottom(() => loadReviews())
         <view class="review-header">
           <view class="user-info">
             <image v-if="!r.isAnonymous && r.userAvatar" :src="r.userAvatar" class="user-avatar"/>
-            <view v-else class="user-avatar placeholder">👤</view>
+            <view v-else class="user-avatar placeholder">
+              <uni-icons type="person" size="24" color="#999" />
+            </view>
             <text class="user-name">{{ r.isAnonymous ? '匿名用户' : (r.userNickname || '用户') }}</text>
           </view>
-          <text class="stars">{{ renderStars(r.rating) }}</text>
+          <view class="stars">
+            <uni-icons v-for="i in 5" :key="i" :type="i <= r.rating ? 'star-filled' : 'star'" size="14" :color="i <= r.rating ? '#FF9500' : '#ddd'" />
+          </view>
         </view>
         <text class="review-content" v-if="r.content">{{ r.content }}</text>
         <view class="review-images" v-if="parseImages(r.images).length">
@@ -167,9 +171,9 @@ onReachBottom(() => loadReviews())
 .review-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12rpx; }
 .user-info { display: flex; align-items: center; gap: 12rpx; }
 .user-avatar { width: 48rpx; height: 48rpx; border-radius: 50%; }
-.user-avatar.placeholder { display: flex; align-items: center; justify-content: center; background: #f0f0f0; font-size: 24rpx; }
+.user-avatar.placeholder { display: flex; align-items: center; justify-content: center; background: #f0f0f0; }
 .user-name { font-size: 26rpx; color: #333; }
-.stars { font-size: 24rpx; color: #FF9500; letter-spacing: 2rpx; }
+.stars { display: flex; align-items: center; gap: 4rpx; }
 
 .review-content { font-size: 28rpx; color: #333; line-height: 1.6; display: block; margin-bottom: 12rpx; }
 .review-images { display: flex; flex-wrap: wrap; gap: 8rpx; margin-bottom: 12rpx; }
