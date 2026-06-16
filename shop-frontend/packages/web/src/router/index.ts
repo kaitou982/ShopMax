@@ -40,6 +40,7 @@ const routes = [
       { path: 'community/:id', name: 'NoteDetail', component: () => import('@/pages/community/detail.vue'), meta: { title: '笔记详情' } },
       { path: 'live', name: 'Live', component: () => import('@/pages/live/index.vue'), meta: { title: '直播' } },
       { path: 'live/:id', name: 'LiveRoom', component: () => import('@/pages/live/room.vue'), meta: { title: '直播间' } },
+      { path: 'seckill', name: 'Seckill', component: () => import('@/pages/seckill/index.vue'), meta: { title: '限时秒杀' } },
     ],
   },
 ]

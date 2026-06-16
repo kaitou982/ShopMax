@@ -20,4 +20,17 @@ public class SeckillProductResponse {
     private Integer sortOrder;
     private Integer status;
     private LocalDateTime createTime;
+
+    // 商品信息字段（从商品表查询）
+    @Schema(description = "商品名称")
+    private String productName;
+
+    @Schema(description = "商品图片")
+    private String productImage;
+
+    @Schema(description = "商品原价")
+    private BigDecimal originalPrice;
+
+    @Schema(description = "已售数量")
+    private Integer soldCount;
 }

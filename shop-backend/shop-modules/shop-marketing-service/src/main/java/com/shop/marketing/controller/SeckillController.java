@@ -1,10 +1,12 @@
 package com.shop.marketing.controller;
 
+import com.shop.common.annotation.RateLimit;
 import com.shop.common.web.PageResult;
 import com.shop.common.web.Result;
 import com.shop.marketing.controller.request.SeckillOrderRequest;
 import com.shop.marketing.controller.request.SeckillProductCreateRequest;
 import com.shop.marketing.controller.request.SeckillSessionCreateRequest;
+import com.shop.marketing.controller.response.SeckillOrderResponse;
 import com.shop.marketing.controller.response.SeckillProductResponse;
 import com.shop.marketing.controller.response.SeckillSessionResponse;
 import com.shop.marketing.service.SeckillService;
@@ -69,9 +71,10 @@ public class SeckillController {
 
     @Operation(summary = "执行秒杀")
     @PostMapping("/execute")
-    public Result<Void> executeSeckill(@RequestAttribute("userId") Long userId,
-                                        @Valid @RequestBody SeckillOrderRequest request) {
-        seckillService.executeSeckill(request.getSessionId(), request.getProductId(), userId);
-        return Result.success();
+    @RateLimit(permitsPerSecond = 100, message = "秒杀请求过于频繁，请稍后再试")
+    public Result<SeckillOrderResponse> executeSeckill(@RequestAttribute("userId") Long userId,
+                                                        @Valid @RequestBody SeckillOrderRequest request) {
+        SeckillOrderResponse response = seckillService.executeSeckill(request.getSessionId(), request.getProductId(), userId);
+        return Result.success(response);
     }
 }

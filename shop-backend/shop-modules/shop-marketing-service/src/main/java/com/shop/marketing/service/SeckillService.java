@@ -4,8 +4,10 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.shop.common.web.PageResult;
 import com.shop.marketing.controller.request.SeckillProductCreateRequest;
 import com.shop.marketing.controller.request.SeckillSessionCreateRequest;
+import com.shop.marketing.controller.response.SeckillOrderResponse;
 import com.shop.marketing.controller.response.SeckillProductResponse;
 import com.shop.marketing.controller.response.SeckillSessionResponse;
+import com.shop.marketing.entity.SeckillOrder;
 import com.shop.marketing.entity.SeckillProduct;
 import com.shop.marketing.entity.SeckillSession;
 
@@ -24,7 +26,7 @@ public interface SeckillService extends IService<SeckillSession> {
     List<SeckillProductResponse> getSessionProducts(Long sessionId);
 
     /** 核心秒杀逻辑 */
-    boolean executeSeckill(Long sessionId, Long productId, Long userId);
+    SeckillOrderResponse executeSeckill(Long sessionId, Long productId, Long userId);
 
     /** 将秒杀商品库存加载到Redis */
     void loadStockToRedis(Long sessionId);

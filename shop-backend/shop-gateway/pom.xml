@@ -17,6 +17,12 @@
 
     <dependencies>
         <dependency>
+            <groupId>com.shop</groupId>
+            <artifactId>shop-common-redis</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-gateway</artifactId>
         </dependency>

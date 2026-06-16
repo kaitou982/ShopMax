@@ -10,7 +10,7 @@ import { productApi, seckillApi, bannerApi, type ProductDetail, type SeckillSess
 const router = useRouter()
 
 const iconList = [
-  { name: '限时秒杀', icon: FlashOutline, color: '#FF5000' },
+  { name: '限时秒杀', icon: FlashOutline, color: '#FF5000', path: '/seckill' },
   { name: '会员中心', icon: DiamondOutline, color: '#FF8F1F' },
   { name: '百亿补贴', icon: FlameOutline, color: '#FF3B3B' },
   { name: '社区', icon: ChatbubbleOutline, color: '#00B578', path: '/community' },
