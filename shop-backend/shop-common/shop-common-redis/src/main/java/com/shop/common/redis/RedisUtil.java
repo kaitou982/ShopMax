@@ -1,5 +1,6 @@
 package com.shop.common.redis;
 
+import jakarta.annotation.Resource;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
@@ -13,8 +14,11 @@ import java.util.concurrent.TimeUnit;
 
 @Component
 @RequiredArgsConstructor
+@SuppressWarnings("unused")
 public class RedisUtil {
 
+//    @Qualifier("shopRedisTemplate")
+    @Resource(name = "shopRedisTemplate")
     private final RedisTemplate<String, Object> redisTemplate;
 
     // ========== String 操作 ==========

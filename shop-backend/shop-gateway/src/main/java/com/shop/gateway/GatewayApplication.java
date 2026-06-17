@@ -10,7 +10,7 @@ import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
  * @author shop
  * @since 2026-05-13
  */
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = {"com.shop.gateway", "com.shop.common"})
 @EnableDiscoveryClient
 public class GatewayApplication {
 

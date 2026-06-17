@@ -18,15 +18,6 @@
     <description>业务模块父工程</description>
 
     <modules>
-        <module>shop-user-service</module>
-        <module>shop-product-service</module>
-        <module>shop-order-service</module>
-        <module>shop-payment-service</module>
-        <module>shop-marketing-service</module>
-        <module>shop-live-service</module>
-        <module>shop-community-service</module>
-        <module>shop-admin-service</module>
-        <module>shop-file-service</module>
         <module>shop-customer-service</module>
     </modules>
 
@@ -52,6 +43,11 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-aop</artifactId>
         </dependency>
 
         <dependency>

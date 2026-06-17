@@ -11,7 +11,7 @@ import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
  * @author shop
  * @since 2026-05-25
  */
-@SpringBootApplication(scanBasePackages = {"com.shop","com.shop.admin", "com.shop.common","com.shop.community.service"})
+@SpringBootApplication(scanBasePackages = {"com.shop.admin", "com.shop.common", "com.shop.payment", "com.shop.community"})
 @MapperScan("com.shop.*.mapper")
 @EnableDiscoveryClient
 public class AdminServiceApplication {

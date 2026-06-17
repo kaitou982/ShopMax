@@ -71,6 +71,16 @@ jwt:
   secret: shopmax-secret-key-2026-for-jwt-signing-and-verification
   expiration: 86400000
 
+# MinIO 存储配置
+storage:
+  minio:
+    enabled: true
+    endpoint: http://localhost:9000
+    access-key: minioadmin
+    secret-key: minioadmin123
+    bucket: shopmax
+    base-url: http://localhost:9000/shopmax
+
 # SRS 流媒体服务器配置
 srs:
   # SRS HTTP-FLV/HLS 输出地址（观众拉流用）

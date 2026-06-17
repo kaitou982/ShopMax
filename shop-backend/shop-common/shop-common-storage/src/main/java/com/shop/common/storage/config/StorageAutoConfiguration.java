@@ -19,7 +19,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @RequiredArgsConstructor
 @EnableConfigurationProperties(StorageProperties.class)
-@ConditionalOnProperty(prefix = "storage.minio", name = "enabled", havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(prefix = "storage.minio", name = "enabled", havingValue = "true")
 public class StorageAutoConfiguration {
 
     private final StorageProperties properties;

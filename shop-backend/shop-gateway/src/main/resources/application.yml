@@ -4,6 +4,12 @@ server:
 spring:
   application:
     name: shop-gateway
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerAutoConfiguration
+      - org.springframework.boot.autoconfigure.jdbc.JdbcTemplateAutoConfiguration
+      - com.baomidou.mybatisplus.autoconfigure.MybatisPlusAutoConfiguration
   cloud:
     nacos:
       username: nacos
@@ -115,6 +121,12 @@ spring:
   jackson:
     date-format: yyyy-MM-dd HH:mm:ss
     time-zone: GMT+8
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password:
+      database: 0
 
 # ==================== JWT配置 ====================
 jwt:
