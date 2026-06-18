@@ -51,6 +51,7 @@ public class SecurityConfig {
 
         // 纯公开路径（所有方法均放行：认证入口、静态资源、文档、回调）
         final String[] FULLY_PUBLIC = {
+                "/internal/**",  // 内部 Feign 调用（不经过 Gateway）
                 "/api/v1/auth/login/**",
                 "/api/v1/auth/register",
                 "/api/v1/auth/sms/send",

@@ -2,8 +2,7 @@
 defineOptions({ name: 'CommunityPublishPage' })
 import { ref } from 'vue'
 import { communityApi } from '@shop/shared'
-
-const BASE_URL = 'http://localhost:8080'
+import { BASE_URL } from '@/http'
 const images = ref<string[]>([])
 const title = ref('')
 const content = ref('')

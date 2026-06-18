@@ -57,8 +57,8 @@ const goCart = () => uni.switchTab({ url: '/pages/cart/index' })
 const goPage = (url: string) => uni.navigateTo({ url })
 const iconNav: Record<string, () => void> = {
   '秒杀': () => uni.navigateTo({ url:'/pages/seckill/index' }),
-  '会员': () => uni.showToast({ title:'会员中心筹备中', icon:'none' }),
-  '百补': () => uni.showToast({ title:'百亿补贴筹备中', icon:'none' }),
+  '会员': () => uni.showToast({ title:'即将开放，敬请期待', icon:'none' }),
+  '百补': () => uni.showToast({ title:'即将开放，敬请期待', icon:'none' }),
   '社区': () => uni.navigateTo({ url:'/pages/community/index' }),
   '直播': () => uni.navigateTo({ url:'/pages/live/index' }),
   '领券': () => uni.navigateTo({ url:'/pages/coupon/center' }),
@@ -124,7 +124,7 @@ const iconNav: Record<string, () => void> = {
         </view>
       </view>
       <view class="admin-menu">
-        <view class="admin-mi" v-if="userStore.isAdmin" @click="showAdmin=false;goPage('/pages/user/index')">
+        <view class="admin-mi" v-if="userStore.isAdmin" @click="showAdmin=false;uni.showToast({title:'请在管理后台（Web端）操作',icon:'none'})">
           <view class="admin-mi-left">
             <uni-icons type="person" size="20" color="#666" />
             <text>用户管理</text>

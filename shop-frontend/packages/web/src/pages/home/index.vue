@@ -3,11 +3,12 @@ defineOptions({ name: 'HomePage' })
 
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { NCarousel, NIcon } from 'naive-ui'
+import { NCarousel, NIcon, useMessage } from 'naive-ui'
 import { FlashOutline, DiamondOutline, FlameOutline, ChatbubbleOutline, VideocamOutline, TicketOutline, CubeOutline, StarOutline } from '@vicons/ionicons5'
 import { productApi, seckillApi, bannerApi, type ProductDetail, type SeckillSession, type Banner } from '@shop/shared'
 
 const router = useRouter()
+const message = useMessage()
 
 const iconList = [
   { name: '限时秒杀', icon: FlashOutline, color: '#FF5000', path: '/seckill' },
@@ -15,9 +16,9 @@ const iconList = [
   { name: '百亿补贴', icon: FlameOutline, color: '#FF3B3B' },
   { name: '社区', icon: ChatbubbleOutline, color: '#00B578', path: '/community' },
   { name: '直播', icon: VideocamOutline, color: '#409EFF', path: '/live' },
-  { name: '领券中心', icon: TicketOutline, color: '#FF5000' },
-  { name: '新品首发', icon: CubeOutline, color: '#1C1C1E' },
-  { name: '我的收藏', icon: StarOutline, color: '#FF8F1F' },
+  { name: '领券中心', icon: TicketOutline, color: '#FF5000', path: '/coupons' },
+  { name: '新品首发', icon: CubeOutline, color: '#1C1C1E', path: '/search' },
+  { name: '我的收藏', icon: StarOutline, color: '#FF8F1F', path: '/user/coupons' },
 ]
 
 // Banner
@@ -80,7 +81,7 @@ const goCategory = (id: number) => router.push(`/category/${id}`)
 
     <!-- 金刚区 -->
     <div class="icon-zone">
-      <div class="icon-item" v-for="item in iconList" :key="item.name" @click="router.push(item.path || '/')">
+      <div class="icon-item" v-for="item in iconList" :key="item.name" @click="item.path ? router.push(item.path) : message.info('功能筹备中，敬请期待')">
         <span class="icon-circle" :style="{ background: item.color }">
           <n-icon :size="24" color="#fff">
             <component :is="item.icon" />
@@ -128,7 +129,7 @@ const goCategory = (id: number) => router.push(`/category/${id}`)
 // Banner
 .banner-carousel { margin-bottom: $spacing-xl; border-radius: $radius-md; overflow: hidden; }
 .banner-slide {
-  height: 360px; border-radius: $radius-md;
+  height: 420px; border-radius: $radius-md;
   background-size: cover; background-position: center; background-color: #f5f5f5;
   display: flex; align-items: flex-end; padding: $spacing-2xl; color: #fff; overflow: hidden;
   cursor: pointer;

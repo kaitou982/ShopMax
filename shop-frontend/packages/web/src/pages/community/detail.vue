@@ -43,6 +43,14 @@ const toggleFavorite = async () => {
   } catch { /* noop */ }
 }
 
+const toggleFollow = async () => {
+  if (!note.value) return
+  try {
+    await communityApi.toggleFollow(note.value.userId)
+    note.value.isFollowing = true
+  } catch { /* noop */ }
+}
+
 const submitComment = async () => {
   if (!commentText.value.trim() || !note.value) return
   submitting.value = true
@@ -87,7 +95,7 @@ const reply = (c: CommentResponse) => {
             <strong>{{ note.userNickname }}</strong>
             <span class="nd-time">{{ note.createTime?.slice(0, 16).replace('T', ' ') }}</span>
           </div>
-          <button class="nd-follow" v-if="note.isFollowing === false">+ 关注</button>
+          <button class="nd-follow" v-if="note.isFollowing === false" @click="toggleFollow">+ 关注</button>
         </div>
       </div>
 

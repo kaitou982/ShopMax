@@ -88,7 +88,6 @@ onReachBottom(() => loadFavorites())
 .empty-icon { font-size: 80rpx; display: block; margin-bottom: 16rpx; }
 .empty-text { font-size: 28rpx; color: #999; }
 
-.fav-list { }
 .fav-card {
   background: #fff; border-radius: 12rpx; overflow: hidden;
   margin-bottom: 16rpx;

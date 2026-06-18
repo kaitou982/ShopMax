@@ -49,7 +49,7 @@ const menu = [{n:'我的订单',p:'/pages/order/list'},{n:'领券中心',p:'/pag
         </view>
       </view>
       <view class="admin-menu">
-        <view class="admin-mi" v-if="us.isAdmin" @click="showAdmin=false">
+        <view class="admin-mi" v-if="us.isAdmin" @click="showAdmin=false;uni.showToast({title:'请在管理后台（Web端）操作',icon:'none'})">
           <view class="admin-mi-left">
             <uni-icons type="person" size="20" color="#666" />
             <text>用户管理</text>

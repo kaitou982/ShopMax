@@ -61,10 +61,10 @@
             <artifactId>druid-spring-boot-3-starter</artifactId>
         </dependency>
 
-        <!-- 用户服务依赖 -->
+        <!-- Feign 服务间调用 -->
         <dependency>
             <groupId>com.shop</groupId>
-            <artifactId>shop-user-service</artifactId>
+            <artifactId>shop-common-feign</artifactId>
             <version>${project.version}</version>
         </dependency>
 

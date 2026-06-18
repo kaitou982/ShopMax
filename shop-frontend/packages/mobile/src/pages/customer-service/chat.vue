@@ -3,6 +3,7 @@ defineOptions({ name: 'CustomerServiceChat' })
 import { ref, nextTick } from 'vue'
 import { onLoad, onUnload } from '@dcloudio/uni-app'
 import { csApi, type CsMessage, type CsSession } from '@shop/shared'
+import { BASE_URL } from '@/http'
 
 interface DisplayMessage {
   id: number
@@ -67,7 +68,7 @@ async function loadMessages() {
 function connectWs() {
   if (!session.value) return
   const token = uni.getStorageSync('token') || ''
-  const wsUrl = `ws://localhost:8080/ws/cs/${session.value.sessionNo}?token=${token}`
+  const wsUrl = `${BASE_URL.replace('http', 'ws')}/ws/cs/${session.value.sessionNo}?token=${token}`
 
   socketTask = uni.connectSocket({
     url: wsUrl,

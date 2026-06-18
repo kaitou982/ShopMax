@@ -3,31 +3,27 @@ package com.shop.customerservice.service;
 import cn.hutool.core.lang.Dict;
 import cn.hutool.core.util.NumberUtil;
 import cn.hutool.json.JSONUtil;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.shop.common.feign.client.OrderServiceClient;
+import com.shop.common.feign.client.ProductServiceClient;
+import com.shop.common.feign.dto.order.OrderSimpleResponse;
+import com.shop.common.feign.dto.product.CategorySimpleResponse;
+import com.shop.common.feign.dto.product.ProductSimpleResponse;
+import com.shop.common.web.Result;
 import com.shop.customerservice.mapper.CsFaqMapper;
-import com.shop.order.entity.Order;
-import com.shop.order.mapper.OrderMapper;
-import com.shop.product.entity.Category;
-import com.shop.product.entity.Product;
-import com.shop.product.mapper.CategoryMapper;
-import com.shop.product.mapper.ProductMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class ToolService {
 
-    private final ProductMapper productMapper;
-    private final OrderMapper orderMapper;
-    private final CategoryMapper categoryMapper;
+    private final ProductServiceClient productServiceClient;
+    private final OrderServiceClient orderServiceClient;
     private final CsFaqMapper faqMapper;
 
     public String executeTool(String toolName, Map<String, Object> args, Long userId) {
@@ -53,19 +49,14 @@ public class ToolService {
     }
 
     private String queryProduct(String keyword) {
-        LambdaQueryWrapper<Product> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(Product::getStatus, 1)
-               .eq(Product::getDeleted, 0)
-               .like(Product::getName, keyword)
-               .orderByDesc(Product::getSales)
-               .last("LIMIT 5");
+        Result<List<ProductSimpleResponse>> result = productServiceClient.searchProducts(
+                keyword, null, null, "sales", 5);
 
-        List<Product> products = productMapper.selectList(wrapper);
-        if (products.isEmpty()) {
+        if (result.getCode() != 200 || result.getData() == null || result.getData().isEmpty()) {
             return "{\"message\": \"未找到与'" + keyword + "'相关的商品\"}";
         }
 
-        List<Dict> result = products.stream().map(p -> Dict.create()
+        List<Dict> products = result.getData().stream().map(p -> Dict.create()
                 .set("id", p.getId())
                 .set("name", p.getName())
                 .set("price", p.getSalePrice().doubleValue())
@@ -73,21 +64,19 @@ public class ToolService {
                 .set("stock", p.getStock())
                 .set("sales", p.getSales())
                 .set("mainImage", p.getMainImage())
-        ).collect(Collectors.toList());
+        ).toList();
 
-        return JSONUtil.toJsonStr(result);
+        return JSONUtil.toJsonStr(products);
     }
 
     private String queryOrder(String orderNo, Long userId) {
-        LambdaQueryWrapper<Order> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(Order::getOrderNo, orderNo)
-               .eq(Order::getUserId, userId)
-               .eq(Order::getDeleted, 0);
+        Result<OrderSimpleResponse> result = orderServiceClient.getByOrderNo(orderNo, userId);
 
-        Order order = orderMapper.selectOne(wrapper);
-        if (order == null) {
+        if (result.getCode() != 200 || result.getData() == null) {
             return "{\"error\": \"未找到该订单，请确认订单号是否正确\"}";
         }
+
+        OrderSimpleResponse order = result.getData();
 
         String statusText = switch (order.getStatus()) {
             case 0 -> "待付款";
@@ -100,13 +89,12 @@ public class ToolService {
             default -> "未知";
         };
 
-        // 手机号脱敏
         String phone = order.getReceiverPhone();
         if (phone != null && phone.length() >= 7) {
             phone = phone.substring(0, 3) + "****" + phone.substring(phone.length() - 4);
         }
 
-        Dict result = Dict.create()
+        Dict dict = Dict.create()
                 .set("orderNo", order.getOrderNo())
                 .set("status", statusText)
                 .set("totalAmount", order.getTotalAmount().doubleValue())
@@ -119,7 +107,7 @@ public class ToolService {
                 .set("payTime", order.getPayTime() != null ? order.getPayTime().toString() : null)
                 .set("deliveryTime", order.getDeliveryTime() != null ? order.getDeliveryTime().toString() : null);
 
-        return JSONUtil.toJsonStr(result);
+        return JSONUtil.toJsonStr(dict);
     }
 
     private String maskName(String name) {
@@ -139,44 +127,32 @@ public class ToolService {
                 .set("question", f.getQuestion())
                 .set("answer", f.getAnswer())
                 .set("category", f.getCategory())
-        ).collect(Collectors.toList());
+        ).toList();
 
         return JSONUtil.toJsonStr(result);
     }
 
     private String recommendProducts(String category, Double budget) {
-        LambdaQueryWrapper<Product> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(Product::getStatus, 1)
-               .eq(Product::getDeleted, 0);
+        Long categoryId = null;
 
-        // 如果指定了分类，查找分类ID
         if (category != null && !category.isBlank()) {
-            LambdaQueryWrapper<Category> catWrapper = new LambdaQueryWrapper<>();
-            catWrapper.eq(Category::getStatus, 1)
-                      .eq(Category::getDeleted, 0)
-                      .like(Category::getName, category);
-            List<Category> categories = categoryMapper.selectList(catWrapper);
-            if (!categories.isEmpty()) {
-                wrapper.eq(Product::getCategoryId, categories.get(0).getId());
+            Result<List<CategorySimpleResponse>> catResult = productServiceClient.searchCategories(category);
+            if (catResult.getCode() == 200 && catResult.getData() != null && !catResult.getData().isEmpty()) {
+                categoryId = catResult.getData().get(0).getId();
             }
         }
 
-        if (budget != null && budget > 0) {
-            wrapper.le(Product::getSalePrice, BigDecimal.valueOf(budget));
-        }
+        Result<List<ProductSimpleResponse>> result = productServiceClient.searchProducts(
+                null, categoryId, budget, "sales", 5);
 
-        wrapper.orderByDesc(Product::getSales)
-               .last("LIMIT 5");
-
-        List<Product> products = productMapper.selectList(wrapper);
-        if (products.isEmpty()) {
+        if (result.getCode() != 200 || result.getData() == null || result.getData().isEmpty()) {
             String msg = budget != null
                     ? "未找到" + budget + "元以内的" + (category != null ? category : "商品")
                     : "暂无合适的商品推荐";
             return "{\"message\": \"" + msg + "\"}";
         }
 
-        List<Dict> result = products.stream().map(p -> Dict.create()
+        List<Dict> products = result.getData().stream().map(p -> Dict.create()
                 .set("id", p.getId())
                 .set("name", p.getName())
                 .set("price", p.getSalePrice().doubleValue())
@@ -184,8 +160,8 @@ public class ToolService {
                 .set("sales", p.getSales())
                 .set("stock", p.getStock())
                 .set("mainImage", p.getMainImage())
-        ).collect(Collectors.toList());
+        ).toList();
 
-        return JSONUtil.toJsonStr(result);
+        return JSONUtil.toJsonStr(products);
     }
 }

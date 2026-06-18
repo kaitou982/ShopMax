@@ -1,22 +1,10 @@
 package com.shop.auth.controller;
 
+import com.shop.common.feign.client.UserServiceClient;
+import com.shop.common.feign.dto.user.*;
 import com.shop.common.redis.RedisUtil;
 import com.shop.common.security.jwt.JwtUtil;
 import com.shop.common.web.Result;
-import com.shop.user.controller.request.UserLoginRequest;
-import com.shop.user.controller.request.PhoneLoginRequest;
-import com.shop.user.controller.request.SendSmsCodeRequest;
-import com.shop.user.controller.request.SendEmailCodeRequest;
-import com.shop.user.controller.request.EmailLoginRequest;
-import com.shop.user.controller.request.ResetPasswordRequest;
-import com.shop.user.controller.request.StoreApplyRequest;
-import com.shop.user.controller.request.WxLoginRequest;
-import com.shop.user.controller.request.UserRegisterRequest;
-import com.shop.user.service.SmsService;
-import com.shop.user.service.EmailService;
-import com.shop.user.controller.response.UserLoginResponse;
-import com.shop.user.controller.response.UserRegisterResponse;
-import com.shop.user.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
@@ -41,9 +29,7 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 public class AuthController {
 
-    private final UserService userService;
-    private final SmsService smsService;
-    private final EmailService emailService;
+    private final UserServiceClient userServiceClient;
     private final JwtUtil jwtUtil;
     private final RedisUtil redisUtil;
 
@@ -61,9 +47,11 @@ public class AuthController {
     public Result<UserLoginResponse> login(@Valid @RequestBody UserLoginRequest request,
                                            HttpServletRequest servletRequest) {
         request.setIp(getClientIp(servletRequest));
-        UserLoginResponse response = userService.login(request);
-        log.info("用户登录成功: username={}", request.getUsername());
-        return Result.success(response);
+        Result<UserLoginResponse> result = userServiceClient.login(request);
+        if (result.getCode() == 200) {
+            log.info("用户登录成功: username={}", request.getUsername());
+        }
+        return result;
     }
 
     @Operation(summary = "用户登录-手机号验证码")
@@ -71,9 +59,11 @@ public class AuthController {
     public Result<UserLoginResponse> loginByPhone(@Valid @RequestBody PhoneLoginRequest request,
                                                   HttpServletRequest servletRequest) {
         request.setIp(getClientIp(servletRequest));
-        UserLoginResponse response = userService.loginByPhone(request);
-        log.info("手机号登录成功: phone={}", request.getPhone());
-        return Result.success(response);
+        Result<UserLoginResponse> result = userServiceClient.loginByPhone(request);
+        if (result.getCode() == 200) {
+            log.info("手机号登录成功: phone={}", request.getPhone());
+        }
+        return result;
     }
 
     @Operation(summary = "用户登录-微信授权")
@@ -81,25 +71,31 @@ public class AuthController {
     public Result<UserLoginResponse> loginByWx(@Valid @RequestBody WxLoginRequest request,
                                                HttpServletRequest servletRequest) {
         request.setIp(getClientIp(servletRequest));
-        UserLoginResponse response = userService.loginByWx(request);
-        log.info("微信登录成功: openid={}", request.getOpenid());
-        return Result.success(response);
+        Result<UserLoginResponse> result = userServiceClient.loginByWx(request);
+        if (result.getCode() == 200) {
+            log.info("微信登录成功: openid={}", request.getOpenid());
+        }
+        return result;
     }
 
     @Operation(summary = "发送短信验证码")
     @PostMapping("/sms/send")
     public Result<Void> sendSmsCode(@Valid @RequestBody SendSmsCodeRequest request) {
-        smsService.sendCode(request.getPhone(), request.getType());
-        log.info("验证码发送成功: phone={}, type={}", request.getPhone(), request.getType());
-        return Result.success();
+        Result<Void> result = userServiceClient.sendSmsCode(request);
+        if (result.getCode() == 200) {
+            log.info("验证码发送成功: phone={}, type={}", request.getPhone(), request.getType());
+        }
+        return result;
     }
 
     @Operation(summary = "发送邮箱验证码")
     @PostMapping("/email/send-code")
     public Result<Void> sendEmailCode(@Valid @RequestBody SendEmailCodeRequest request) {
-        emailService.sendCode(request.getEmail(), request.getType());
-        log.info("邮箱验证码发送成功: email={}, type={}", request.getEmail(), request.getType());
-        return Result.success();
+        Result<Void> result = userServiceClient.sendEmailCode(request);
+        if (result.getCode() == 200) {
+            log.info("邮箱验证码发送成功: email={}, type={}", request.getEmail(), request.getType());
+        }
+        return result;
     }
 
     @Operation(summary = "用户登录-邮箱验证码")
@@ -107,31 +103,37 @@ public class AuthController {
     public Result<UserLoginResponse> loginByEmail(@Valid @RequestBody EmailLoginRequest request,
                                                   HttpServletRequest servletRequest) {
         request.setIp(getClientIp(servletRequest));
-        UserLoginResponse response = userService.loginByEmail(request);
-        log.info("邮箱登录成功: email={}", request.getEmail());
-        return Result.success(response);
+        Result<UserLoginResponse> result = userServiceClient.loginByEmail(request);
+        if (result.getCode() == 200) {
+            log.info("邮箱登录成功: email={}", request.getEmail());
+        }
+        return result;
     }
 
     @Operation(summary = "检查邮箱是否已注册")
     @GetMapping("/check-email")
     public Result<Boolean> checkEmail(@RequestParam @jakarta.validation.constraints.Email String email) {
-        return Result.success(userService.existsByEmail(email));
+        return userServiceClient.existsByEmail(email);
     }
 
     @Operation(summary = "重置密码")
     @PostMapping("/reset-password")
     public Result<Void> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
-        userService.resetPassword(request);
-        log.info("重置密码成功: email={}", request.getEmail());
-        return Result.success();
+        Result<Void> result = userServiceClient.resetPassword(request);
+        if (result.getCode() == 200) {
+            log.info("重置密码成功: email={}", request.getEmail());
+        }
+        return result;
     }
 
     @Operation(summary = "用户注册")
     @PostMapping("/register")
     public Result<UserRegisterResponse> register(@Valid @RequestBody UserRegisterRequest request) {
-        UserRegisterResponse response = userService.register(request);
-        log.info("用户注册成功: username={}", response.getUsername());
-        return Result.success(response);
+        Result<UserRegisterResponse> result = userServiceClient.register(request);
+        if (result.getCode() == 200 && result.getData() != null) {
+            log.info("用户注册成功: username={}", result.getData().getUsername());
+        }
+        return result;
     }
 
     @Operation(summary = "用户登出")
@@ -167,9 +169,11 @@ public class AuthController {
     @PostMapping("/store/apply")
     public Result<Void> applyStore(@RequestAttribute("userId") Long userId,
                                    @Valid @RequestBody StoreApplyRequest request) {
-        userService.applyStore(userId, request);
-        log.info("用户申请入驻: userId={}, storeName={}", userId, request.getStoreName());
-        return Result.success();
+        Result<Void> result = userServiceClient.applyStore(userId, request);
+        if (result.getCode() == 200) {
+            log.info("用户申请入驻: userId={}, storeName={}", userId, request.getStoreName());
+        }
+        return result;
     }
 
     /**
@@ -186,7 +190,6 @@ public class AuthController {
         if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
             ip = request.getRemoteAddr();
         }
-        // 多个代理情况，取第一个IP
         if (ip != null && ip.contains(",")) {
             ip = ip.split(",")[0].trim();
         }

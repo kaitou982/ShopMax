@@ -48,17 +48,6 @@
             <version>2.3.0</version>
         </dependency>
 
-        <!-- 跨模块数据查询（MVP同库直查） -->
-        <dependency>
-            <groupId>com.shop</groupId>
-            <artifactId>shop-product-service</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.shop</groupId>
-            <artifactId>shop-order-service</artifactId>
-            <version>${project.version}</version>
-        </dependency>
     </dependencies>
 
     <build>

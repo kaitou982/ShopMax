@@ -4,7 +4,7 @@ import { useUserStore } from '@/stores'
 const userStore = useUserStore()
 const logout = () => { userStore.logout(); uni.switchTab({ url: '/pages/index/index' }) }
 const goPassword = () => uni.navigateTo({ url: '/pages/user/password' })
-const showComing = () => uni.showToast({ title: '功能开发中', icon: 'none' })
+const showComing = () => uni.showToast({ title: '即将开放，敬请期待', icon: 'none' })
 </script>
 <template>
   <view class="sp">

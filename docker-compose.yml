@@ -56,6 +56,17 @@ services:
       - shopmax-net
     restart: unless-stopped
 
+  sentinel:
+    image: bladex/sentinel-dashboard:1.8.8
+    container_name: shopmax-sentinel
+    ports:
+      - "8858:8858"
+    environment:
+      JAVA_OPT: "-Dserver.port=8858 -Dcsp.sentinel.dashboard.server=localhost:8858"
+    networks:
+      - shopmax-net
+    restart: unless-stopped
+
 networks:
   shopmax-net:
     driver: bridge

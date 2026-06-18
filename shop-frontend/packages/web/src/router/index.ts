@@ -32,8 +32,6 @@ const routes = [
       { path: 'order/list', name: 'OrderList', component: () => import('@/pages/order/list.vue'), meta: { title: '我的订单' } },
       { path: 'order/:id', name: 'OrderDetail', component: () => import('@/pages/order/detail.vue'), meta: { title: '订单详情' } },
       { path: 'user', name: 'User', component: () => import('@/pages/user/index.vue'), meta: { title: '个人中心' } },
-      { path: 'user/profile', redirect: '/user' },
-      { path: 'user/address', redirect: '/user' },
       { path: 'user/coupons', name: 'MyCoupons', component: () => import('@/pages/user/coupons.vue'), meta: { title: '我的优惠券' } },
       { path: 'coupons', name: 'CouponCenter', component: () => import('@/pages/coupons/index.vue'), meta: { title: '领券中心' } },
       { path: 'community', name: 'Community', component: () => import('@/pages/community/index.vue'), meta: { title: '社区' } },

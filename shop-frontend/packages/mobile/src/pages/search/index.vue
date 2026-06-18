@@ -46,7 +46,7 @@ onMounted(async () => {
 // 搜索历史管理
 const loadHistory = () => {
   try {
-    history.value = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]')
+    history.value = JSON.parse(uni.getStorageSync(HISTORY_KEY) || '[]')
   } catch { history.value = [] }
 }
 
@@ -54,17 +54,17 @@ const saveHistory = (kw: string) => {
   const list = history.value.filter(h => h !== kw)
   list.unshift(kw)
   history.value = list.slice(0, MAX_HISTORY)
-  localStorage.setItem(HISTORY_KEY, JSON.stringify(history.value))
+  uni.setStorageSync(HISTORY_KEY, JSON.stringify(history.value))
 }
 
 const removeHistory = (kw: string) => {
   history.value = history.value.filter(h => h !== kw)
-  localStorage.setItem(HISTORY_KEY, JSON.stringify(history.value))
+  uni.setStorageSync(HISTORY_KEY, JSON.stringify(history.value))
 }
 
 const clearHistory = () => {
   history.value = []
-  localStorage.removeItem(HISTORY_KEY)
+  uni.removeStorageSync(HISTORY_KEY)
 }
 
 // 搜索建议（防抖）

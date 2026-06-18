@@ -3,6 +3,7 @@ defineOptions({ name: 'OrderDetail' })
 import { ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { orderApi, type OrderDetail } from '@shop/shared'
+import { payMethods, doPay as payOrder } from '@/utils/pay'
 
 const order = ref<OrderDetail | null>(null)
 const loading = ref(true)
@@ -19,12 +20,6 @@ const statusMap: Record<number, { label: string; color: string }> = {
   6: { label: '已退款', color: '#999' },
 }
 
-const payMethods = [
-  { value: 3, label: '余额支付', icon: 'wallet' },
-  { value: 1, label: '支付宝', icon: 'auth' },
-  { value: 2, label: '微信支付', icon: 'weixin' },
-]
-
 onLoad((opts?: any) => {
   if (opts?.id) loadDetail(Number(opts.id))
 })
@@ -40,39 +35,11 @@ async function loadDetail(id: number) {
 
 function goPay() { showPaySheet.value = true }
 
-async function doPay(payType: number) {
+async function handlePay(payType: number) {
   if (!order.value) return
   showPaySheet.value = false
-  await uni.showLoading({ title: '支付中...' })
-  try {
-    if (payType === 3) {
-      await orderApi.pay(order.value.id, 3)
-    } else {
-      const BASE_URL = 'http://localhost:8080'
-      const token = uni.getStorageSync('token') || ''
-      const resp = await new Promise<any>((resolve, reject) => {
-        uni.request({
-          url: `${BASE_URL}/api/v1/payments`, method: 'POST',
-          header: { Authorization: token ? `Bearer ${token}` : '', 'Content-Type': 'application/json' },
-          data: { orderId: order.value!.id, payMethod: payType, scene: 'mobile' },
-          success: r => { const d = r.data as any; if (d?.code === 200) resolve(d.data); else reject(d) },
-          fail: reject,
-        })
-      })
-      if (resp.mode === 'simulate' || resp.mode === 'mock') {
-        await new Promise<void>((resolve, reject) => {
-          uni.request({
-            url: `${BASE_URL}/api/v1/payments/${resp.paymentNo}/mock-confirm`, method: 'POST',
-            header: { Authorization: token ? `Bearer ${token}` : '', 'Content-Type': 'application/json' },
-            success: r => { const d = r.data as any; if (d?.code === 200) resolve(); else reject(d) },
-            fail: reject,
-          })
-        })
-      }
-    }
-    uni.showToast({ title: '支付成功', icon: 'success' })
-    loadDetail(order.value.id)
-  } finally { uni.hideLoading() }
+  await payOrder(order.value.id, payType)
+  loadDetail(order.value.id)
 }
 
 async function cancelOrder() {
@@ -164,9 +131,21 @@ function formatTime(t?: string) {
           <uni-icons type="shop" size="18" color="#FF5000" />
           <text>商品信息</text>
         </view>
-        <view class="goods-item">
+        <view v-if="order.items?.length">
+          <view class="goods-item" v-for="item in order.items" :key="item.productId">
+            <image v-if="item.productImage" :src="item.productImage" mode="aspectFill" class="goods-img" />
+            <view class="goods-info">
+              <text class="goods-name">{{ item.productName }}</text>
+              <view class="goods-row">
+                <text class="goods-price">¥{{ item.salePrice?.toFixed(2) }}</text>
+                <text class="goods-qty">×{{ item.quantity }}</text>
+              </view>
+            </view>
+          </view>
+        </view>
+        <view v-else class="goods-item">
           <view class="goods-info">
-            <text class="goods-name">{{ order.orderNo }}</text>
+            <text class="goods-name">商品详情暂不可用</text>
             <text class="goods-price">¥{{ order.totalAmount?.toFixed(2) }}</text>
           </view>
         </view>
@@ -230,7 +209,7 @@ function formatTime(t?: string) {
     <view class="ps-mask" v-if="showPaySheet" @click="showPaySheet = false"/>
     <view class="ps-sheet" v-if="showPaySheet">
       <view class="ps-hd"><text>选择支付方式</text><text class="ps-amt">¥{{ order?.payAmount?.toFixed(2) }}</text></view>
-      <view class="ps-item" v-for="m in payMethods" :key="m.value" @click="doPay(m.value)">
+      <view class="ps-item" v-for="m in payMethods" :key="m.value" @click="handlePay(m.value)">
         <uni-icons :type="m.icon" size="24" :color="m.value===3?'#FF9000':m.value===1?'#1677FF':'#07C160'" />
         <text class="ps-label">{{ m.label }}</text>
         <uni-icons type="right" size="16" color="#ccc" />
@@ -257,10 +236,13 @@ function formatTime(t?: string) {
 .addr-phone { font-size: 26rpx; color: #666; }
 .addr-detail { font-size: 26rpx; color: #666; line-height: 1.5; }
 
-.goods-item { display: flex; gap: 16rpx; }
+.goods-item { display: flex; gap: 16rpx; padding: 12rpx 0; }
+.goods-img { width: 120rpx; height: 120rpx; border-radius: 8rpx; flex-shrink: 0; }
 .goods-info { flex: 1; }
 .goods-name { font-size: 28rpx; color: #333; display: block; }
-.goods-price { font-size: 28rpx; color: #FF5000; font-weight: 600; display: block; margin-top: 8rpx; }
+.goods-row { display: flex; align-items: center; gap: 12rpx; margin-top: 8rpx; }
+.goods-price { font-size: 28rpx; color: #FF5000; font-weight: 600; }
+.goods-qty { font-size: 24rpx; color: #999; }
 
 .amount-row { display: flex; justify-content: space-between; padding: 8rpx 0; font-size: 26rpx; color: #666; }
 .amount-row.total { border-top: 1rpx solid #f0f0f0; padding-top: 16rpx; margin-top: 8rpx; }

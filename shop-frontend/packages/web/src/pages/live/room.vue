@@ -2,13 +2,13 @@
 /**
  * 直播间页面 - 沉浸式全屏布局（抖音风格）
  */
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { NIcon } from 'naive-ui'
+import { NIcon, useMessage } from 'naive-ui'
 import { EyeOutline, CartOutline, HeartOutline, GiftOutline, ChevronDownOutline, CubeOutline } from '@vicons/ionicons5'
 import { liveRoomApi } from '@shop/shared'
 import type { LiveRoom, LiveProduct } from '@shop/shared'
-import { useUserStore } from '../../stores'
+import { useUserStore, useCartStore } from '../../stores'
 import LivePlayer from '../../components/LivePlayer.vue'
 import LiveDanmaku from '../../components/LiveDanmaku.vue'
 import LiveGiftPanel from '../../components/LiveGiftPanel.vue'
@@ -20,6 +20,8 @@ defineOptions({ name: 'LiveRoom' })
 const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
+const cartStore = useCartStore()
+const message = useMessage()
 
 const roomId = Number(route.params.id)
 const room = ref<LiveRoom | null>(null)
@@ -42,14 +44,15 @@ const {
 } = useLiveSocket(roomId)
 
 // 拉流地址
+const LIVE_BASE = import.meta.env.VITE_LIVE_URL || 'http://localhost:8085'
 const flvUrl = computed(() => {
   if (!room.value) return ''
-  return `http://localhost:8085/live/${roomId}.flv`
+  return `${LIVE_BASE}/live/${roomId}.flv`
 })
 
 const hlsUrl = computed(() => {
   if (!room.value) return ''
-  return `http://localhost:8085/live/${roomId}.m3u8`
+  return `${LIVE_BASE}/live/${roomId}.m3u8`
 })
 
 // 加载直播间信息
@@ -114,17 +117,20 @@ const handleBuy = (product: LiveProduct) => {
 
 // 加入购物车
 const handleAddCart = (product: LiveProduct) => {
-  // TODO: 调用购物车 API
-  console.log('加入购物车:', product)
+  cartStore.addToCart({
+    productId: product.productId,
+    skuId: product.skuId,
+    name: product.productName,
+    image: product.productImage,
+    price: product.livePrice,
+    quantity: 1,
+  })
+  message.success('已加入购物车')
 }
 
 onMounted(() => {
   loadRoom()
   loadProducts()
-})
-
-onUnmounted(() => {
-  // 清理
 })
 </script>
 

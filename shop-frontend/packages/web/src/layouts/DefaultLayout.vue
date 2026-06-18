@@ -163,11 +163,11 @@ const showChatWindow = ref(false)
           订单管理
         </router-link>
         <div class="ud-divider" />
-        <router-link to="/user/profile" class="udm" @click="showUserMenu=false">
+        <router-link to="/user" class="udm" @click="showUserMenu=false">
           <n-icon :size="18" class="udm-icon"><CreateOutline /></n-icon>
           编辑资料
         </router-link>
-        <router-link to="/user/address" class="udm" @click="showUserMenu=false">
+        <router-link to="/user" class="udm" @click="showUserMenu=false">
           <n-icon :size="18" class="udm-icon"><LocationOutline /></n-icon>
           收货地址
         </router-link>
@@ -197,7 +197,7 @@ const showChatWindow = ref(false)
         </nav>
         <!-- 分类悬浮面板 -->
         <div class="category-panel" v-if="hoverCategory" @mouseleave="hoverCategory = null">
-          <div class="category-panel-inner">
+          <div class="category-panel-inner" v-if="hoverCategory.children?.length">
             <div class="cat-group" v-for="child in hoverCategory.children" :key="child.id">
               <router-link :to="`/category/${child.id}`" class="cat-group-title">{{ child.name }}</router-link>
               <div class="cat-group-children" v-if="child.children">
@@ -207,6 +207,7 @@ const showChatWindow = ref(false)
               </div>
             </div>
           </div>
+          <div class="category-panel-empty" v-else>暂无子分类</div>
         </div>
       </aside>
 
@@ -220,9 +221,9 @@ const showChatWindow = ref(false)
     <footer class="site-footer">
       <div class="footer-inner">
         <div class="footer-col"><strong>ShopMax</strong><br>品质生活电商平台</div>
-        <div class="footer-col"><strong>帮助</strong><br>购物指南<br>支付方式<br>配送说明</div>
-        <div class="footer-col"><strong>服务</strong><br>售后服务<br>投诉建议<br>联系客服</div>
-        <div class="footer-col"><strong>关于</strong><br>关于我们<br>隐私政策<br>用户协议</div>
+        <div class="footer-col"><strong>帮助</strong><br><span class="fl-muted">购物指南</span><br><span class="fl-muted">支付方式</span><br><span class="fl-muted">配送说明</span></div>
+        <div class="footer-col"><strong>服务</strong><br><span class="fl-muted">售后服务</span><br><span class="fl-muted">投诉建议</span><br><router-link to="/user" class="fl-link">联系客服</router-link></div>
+        <div class="footer-col"><strong>关于</strong><br><span class="fl-muted">关于我们</span><br><span class="fl-muted">隐私政策</span><br><span class="fl-muted">用户协议</span></div>
       </div>
       <div class="footer-bottom">© 2026 ShopMax. All rights reserved. 浙ICP备XXXXXXXX号</div>
     </footer>
@@ -350,12 +351,15 @@ const showChatWindow = ref(false)
 .category-panel-inner { padding: $spacing-xl; display: grid; grid-template-columns: repeat(3, 1fr); gap: $spacing-xl; }
 .cat-group-title { font-weight: 600; font-size: $font-size-sm; color: $text-primary; display: block; margin-bottom: $spacing-sm; }
 .cat-child { display: block; font-size: $font-size-xs; color: $text-secondary; padding: 3px 0; &:hover { color: $brand-orange; } }
+.category-panel-empty { padding: $spacing-3xl; text-align: center; color: $text-hint; font-size: $font-size-sm; }
 .content-area { flex: 1; min-width: 0; padding: $spacing-xl; }
 
 // ── 页脚 ────────────────────────────────────────
 .site-footer { background: #fff; border-top: 1px solid $border-color; margin-top: auto; }
 .footer-inner { max-width: $container-max; margin: 0 auto; display: flex; gap: $spacing-3xl; padding: $spacing-3xl $spacing-xl; }
 .footer-col { font-size: $font-size-xs; color: $text-secondary; line-height: 2; flex: 1; }
+.fl-muted { opacity: 0.5; cursor: default; }
+.fl-link { color: $text-secondary; text-decoration: none; &:hover { color: $brand-orange; } }
 .footer-bottom { text-align: center; padding: $spacing-base; font-size: $font-size-xs; color: $text-hint; border-top: 1px solid $border-light; }
 
 // ── 悬浮按钮 ────────────────────────────────────

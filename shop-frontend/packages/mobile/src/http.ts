@@ -1,6 +1,6 @@
 import { setHttpClient, type HttpClient } from '@shop/shared'
 
-const BASE_URL = 'http://localhost:8080'
+export const BASE_URL = 'http://localhost:8080'
 
 /** 深拷贝：将 uni.request 返回的可能冻结对象转为可变普通对象 */
 const unfreeze = <T>(obj: T): T => {

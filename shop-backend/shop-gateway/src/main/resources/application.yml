@@ -19,6 +19,10 @@ spring:
         server-addr: localhost:8848
       config:
         enabled: false
+    sentinel:
+      transport:
+        dashboard: localhost:8858
+        port: 8719
     gateway:
       # 全局 CORS 配置
       globalcors:

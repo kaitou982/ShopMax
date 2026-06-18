@@ -141,6 +141,6 @@ public class RateLimitFilter implements GlobalFilter, Ordered {
 
     @Override
     public int getOrder() {
-        return -100; // 在认证之前执行
+        return -200; // 限流在认证之前执行（AuthGlobalFilter order=-100）
     }
 }

@@ -8,6 +8,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { onLoad, onUnload } from '@dcloudio/uni-app'
 import { liveRoomApi } from '@shop/shared'
 import type { LiveRoom, LiveProduct, Gift } from '@shop/shared'
+import { BASE_URL } from '@/http'
 
 const roomId = ref(0)
 const room = ref<LiveRoom | null>(null)
@@ -30,23 +31,23 @@ let reconnectCount = 0
 const maxReconnect = 3
 
 // 拉流地址（HLS）
+const LIVE_BASE = BASE_URL.replace(':8080', ':8085')
 const hlsUrl = computed(() => {
   if (!room.value) return ''
-  return `http://localhost:8085/live/${roomId.value}.m3u8`
+  return `${LIVE_BASE}/live/${roomId.value}.m3u8`
 })
 
 // 连接 WebSocket
 const connectWebSocket = () => {
   const token = uni.getStorageSync('token')
   ws = uni.connectSocket({
-    url: `ws://localhost:8080/ws/live/${roomId.value}`,
+    url: `${BASE_URL.replace('http', 'ws')}/ws/live/${roomId.value}`,
     header: {
       Authorization: token ? `Bearer ${token}` : '',
     },
   })
 
   ws.onOpen(() => {
-    console.log('[LiveSocket] 连接成功')
     reconnectCount = 0
   })
 
@@ -58,19 +59,14 @@ const connectWebSocket = () => {
       if (msg.type === 'online') {
         onlineCount.value = msg.data.count
       }
-    } catch (e) {
-      console.error('[LiveSocket] 解析消息失败:', e)
-    }
+    } catch { /* ignore malformed messages */ }
   })
 
   ws.onClose(() => {
-    console.log('[LiveSocket] 连接关闭')
     attemptReconnect()
   })
 
-  ws.onError(() => {
-    console.error('[LiveSocket] 连接错误')
-  })
+  ws.onError(() => { /* connection error, will attempt reconnect */ })
 }
 
 const attemptReconnect = () => {
@@ -145,9 +141,7 @@ const loadData = async () => {
     if (explaining) {
       currentProduct.value = explaining
     }
-  } catch (e) {
-    console.error('加载数据失败:', e)
-  }
+  } catch { /* optional data */ }
 }
 
 onLoad((opts?: any) => {
@@ -172,7 +166,7 @@ onUnload(() => {
       :controls="false"
       object-fit="contain"
       class="live-room__video"
-      @error="() => console.log('视频播放错误')"
+      @error="() => {}"
     />
 
     <!-- 顶部信息栏 -->

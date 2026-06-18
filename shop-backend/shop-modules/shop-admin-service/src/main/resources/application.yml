@@ -19,6 +19,10 @@ spring:
         enabled: true
         server-addr: localhost:8848
         file-extension: yaml
+    sentinel:
+      transport:
+        dashboard: localhost:8858
+        port: 8719
 
   datasource:
     type: com.alibaba.druid.pool.DruidDataSource
@@ -78,3 +82,7 @@ logging:
   level:
     com.shop.admin: debug
     com.shop.admin.mapper: debug
+
+feign:
+  sentinel:
+    enabled: true

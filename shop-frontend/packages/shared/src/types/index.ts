@@ -109,6 +109,7 @@ export interface OrderDetail {
   receiverName: string; receiverPhone: string; receiverAddress: string
   remark: string; sourceType: number
   createTime: string; payTime?: string; deliveryTime?: string; receiveTime?: string
+  items?: OrderItem[]
 }
 
 // ── 地址相关 ────────────────────────────────────

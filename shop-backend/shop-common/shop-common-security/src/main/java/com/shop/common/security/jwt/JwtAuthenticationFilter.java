@@ -36,6 +36,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
      * 不需要验证Token的路径（仅匿名端点）
      */
     private static final String[] SKIP_PATHS = {
+            "/internal",  // 内部 Feign 调用（不经过 Gateway）
             "/swagger-ui",
             "/v3/api-docs",
             "/swagger-resources",

@@ -37,4 +37,7 @@ export const communityApi = {
 
   getMyFavorites: (params?: Record<string, unknown>) =>
     getHttpClient().get<PageResult<NoteResponse>>('/api/v1/community/users/me/favorites', params),
+
+  toggleFollow: (userId: number) =>
+    getHttpClient().post<boolean>(`/api/v1/community/users/${userId}/follow`),
 }
