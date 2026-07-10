@@ -1,0 +1,48 @@
+# ShardingSphere 分片配置示例
+# 注意：此配置需要根据实际数据库结构调整
+# 当前为示例配置，生产环境需要根据数据量和业务需求调整
+
+dataSources:
+  ds_0:
+    dataSourceClassName: com.alibaba.druid.pool.DruidDataSource
+    driverClassName: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/shopmax?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai
+    username: root
+    password: ${DB_PASSWORD:aptx4869}
+    initialSize: 5
+    minIdle: 5
+    maxActive: 20
+
+rules:
+  - !SHARDING
+    tables:
+      oms_order:
+        actualDataNodes: ds_0.oms_order_$->{0..1}
+        tableStrategy:
+          standard:
+            shardingColumn: user_id
+            shardingAlgorithmName: order_inline
+        keyGenerateStrategy:
+          column: id
+          keyGeneratorName: snowflake
+      oms_order_item:
+        actualDataNodes: ds_0.oms_order_item_$->{0..1}
+        tableStrategy:
+          standard:
+            shardingColumn: order_id
+            shardingAlgorithmName: order_item_inline
+        keyGenerateStrategy:
+          column: id
+          keyGeneratorName: snowflake
+    shardingAlgorithms:
+      order_inline:
+        type: INLINE
+        props:
+          algorithm-expression: oms_order_$->{user_id % 2}
+      order_item_inline:
+        type: INLINE
+        props:
+          algorithm-expression: oms_order_item_$->{order_id % 2}
+    keyGenerators:
+      snowflake:
+        type: SNOWFLAKE

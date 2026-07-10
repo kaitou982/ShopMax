@@ -1,0 +1,56 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: shopmax-ingress
+  namespace: shopmax
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "600"
+spec:
+  ingressClassName: nginx
+  rules:
+    # API 网关
+    - host: api.shopmax.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: gateway
+                port:
+                  number: 8080
+    # 管理后台
+    - host: admin.shopmax.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: admin-ui
+                port:
+                  number: 80
+    # Nacos 控制台
+    - host: nacos.shopmax.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: nacos
+                port:
+                  number: 8848
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: shopmax-secrets
+  namespace: shopmax
+type: Opaque
+stringData:
+  DB_PASSWORD: "aptx4869"
+  REDIS_PASSWORD: ""
+  NACOS_PASSWORD: "nacos"

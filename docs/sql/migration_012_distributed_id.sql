@@ -1,0 +1,71 @@
+-- Migration 012: 分布式ID生成器迁移
+-- 将所有表的主键从 AUTO_INCREMENT 改为应用层雪花算法生成
+-- 执行前请确保所有表中没有正在写入的数据
+
+-- ==================== 用户模块 ====================
+ALTER TABLE ums_user MODIFY COLUMN id BIGINT NOT NULL COMMENT '用户ID（雪花算法）';
+ALTER TABLE ums_user_address MODIFY COLUMN id BIGINT NOT NULL COMMENT '地址ID';
+ALTER TABLE ums_integral_log MODIFY COLUMN id BIGINT NOT NULL COMMENT '积分记录ID';
+ALTER TABLE ums_balance_log MODIFY COLUMN id BIGINT NOT NULL COMMENT '余额记录ID';
+ALTER TABLE ums_coupon MODIFY COLUMN id BIGINT NOT NULL COMMENT '优惠券ID';
+ALTER TABLE ums_coupon_receive MODIFY COLUMN id BIGINT NOT NULL COMMENT '领取记录ID';
+
+-- ==================== 商品模块 ====================
+ALTER TABLE pms_product MODIFY COLUMN id BIGINT NOT NULL COMMENT '商品ID';
+ALTER TABLE pms_product_sku MODIFY COLUMN id BIGINT NOT NULL COMMENT 'SKU ID';
+ALTER TABLE pms_product_review MODIFY COLUMN id BIGINT NOT NULL COMMENT '评价ID';
+ALTER TABLE pms_category MODIFY COLUMN id BIGINT NOT NULL COMMENT '分类ID';
+ALTER TABLE pms_brand MODIFY COLUMN id BIGINT NOT NULL COMMENT '品牌ID';
+ALTER TABLE pms_search_keyword MODIFY COLUMN id BIGINT NOT NULL COMMENT '搜索关键词ID';
+ALTER TABLE pms_new_product_banner MODIFY COLUMN id BIGINT NOT NULL COMMENT '新品Banner ID';
+
+-- ==================== 订单模块 ====================
+ALTER TABLE oms_order MODIFY COLUMN id BIGINT NOT NULL COMMENT '订单ID';
+ALTER TABLE oms_order_item MODIFY COLUMN id BIGINT NOT NULL COMMENT '订单商品ID';
+ALTER TABLE oms_order_log MODIFY COLUMN id BIGINT NOT NULL COMMENT '订单日志ID';
+ALTER TABLE oms_cart_item MODIFY COLUMN id BIGINT NOT NULL COMMENT '购物车ID';
+ALTER TABLE oms_logistics MODIFY COLUMN id BIGINT NOT NULL COMMENT '物流ID';
+ALTER TABLE oms_logistics_trace MODIFY COLUMN id BIGINT NOT NULL COMMENT '物流轨迹ID';
+ALTER TABLE oms_refund_record MODIFY COLUMN id BIGINT NOT NULL COMMENT '退款记录ID';
+
+-- ==================== 支付模块 ====================
+ALTER TABLE pay_payment MODIFY COLUMN id BIGINT NOT NULL COMMENT '支付单ID';
+ALTER TABLE pay_refund_record MODIFY COLUMN id BIGINT NOT NULL COMMENT '退款记录ID';
+
+-- ==================== 营销模块 ====================
+ALTER TABLE mms_coupon MODIFY COLUMN id BIGINT NOT NULL COMMENT '优惠券ID';
+ALTER TABLE mms_coupon_receive MODIFY COLUMN id BIGINT NOT NULL COMMENT '领取记录ID';
+ALTER TABLE mms_seckill_product MODIFY COLUMN id BIGINT NOT NULL COMMENT '秒杀商品ID';
+ALTER TABLE mms_seckill_session MODIFY COLUMN id BIGINT NOT NULL COMMENT '秒杀场次ID';
+ALTER TABLE mms_seckill_order MODIFY COLUMN id BIGINT NOT NULL COMMENT '秒杀订单ID';
+ALTER TABLE mms_seckill_message MODIFY COLUMN id BIGINT NOT NULL COMMENT '秒杀消息ID';
+ALTER TABLE mms_group_buy_activity MODIFY COLUMN id BIGINT NOT NULL COMMENT '团购活动ID';
+ALTER TABLE mms_group_buy_group MODIFY COLUMN id BIGINT NOT NULL COMMENT '团购组ID';
+ALTER TABLE mms_group_buy_member MODIFY COLUMN id BIGINT NOT NULL COMMENT '团购成员ID';
+ALTER TABLE mms_promotion MODIFY COLUMN id BIGINT NOT NULL COMMENT '促销活动ID';
+ALTER TABLE mms_promotion_scope MODIFY COLUMN id BIGINT NOT NULL COMMENT '促销范围ID';
+
+-- ==================== 社区模块 ====================
+ALTER TABLE cms_note MODIFY COLUMN id BIGINT NOT NULL COMMENT '笔记ID';
+ALTER TABLE cms_note_image MODIFY COLUMN id BIGINT NOT NULL COMMENT '笔记图片ID';
+ALTER TABLE cms_note_product MODIFY COLUMN id BIGINT NOT NULL COMMENT '笔记商品ID';
+ALTER TABLE cms_note_like MODIFY COLUMN id BIGINT NOT NULL COMMENT '点赞记录ID';
+ALTER TABLE cms_note_comment MODIFY COLUMN id BIGINT NOT NULL COMMENT '评论ID';
+ALTER TABLE cms_note_favorite MODIFY COLUMN id BIGINT NOT NULL COMMENT '收藏记录ID';
+
+-- ==================== 直播模块 ====================
+ALTER TABLE lms_live_room MODIFY COLUMN id BIGINT NOT NULL COMMENT '直播间ID';
+ALTER TABLE lms_anchor MODIFY COLUMN id BIGINT NOT NULL COMMENT '主播ID';
+ALTER TABLE lms_live_product MODIFY COLUMN id BIGINT NOT NULL COMMENT '直播商品ID';
+ALTER TABLE lms_live_message MODIFY COLUMN id BIGINT NOT NULL COMMENT '直播消息ID';
+ALTER TABLE lms_gift MODIFY COLUMN id BIGINT NOT NULL COMMENT '礼物ID';
+ALTER TABLE lms_coin_log MODIFY COLUMN id BIGINT NOT NULL COMMENT '金币记录ID';
+
+-- ==================== 客服模块 ====================
+ALTER TABLE cs_session MODIFY COLUMN id BIGINT NOT NULL COMMENT '会话ID';
+ALTER TABLE cs_message MODIFY COLUMN id BIGINT NOT NULL COMMENT '消息ID';
+ALTER TABLE cs_faq MODIFY COLUMN id BIGINT NOT NULL COMMENT 'FAQ ID';
+
+-- ==================== 管理模块 ====================
+ALTER TABLE sys_banner MODIFY COLUMN id BIGINT NOT NULL COMMENT 'Banner ID';
+ALTER TABLE sys_notification MODIFY COLUMN id BIGINT NOT NULL COMMENT '通知ID';
