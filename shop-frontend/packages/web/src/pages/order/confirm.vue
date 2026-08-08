@@ -234,7 +234,7 @@ const goAddress = () => router.push('/user')
     </button>
   </div>
   </template>
-</template>
+</div>
 
 <style scoped lang="scss">
 .loading-state { text-align: center; padding: 120px 0; color: #999; font-size: 15px; }
