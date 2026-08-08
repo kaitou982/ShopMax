@@ -6,9 +6,9 @@ B2C 商城 + 直播带货 + 社交电商 + 内容社区，全栈微服务电商�
 
 | 端 | 体验地址 |
 |---|---------|
-| 🖥️ Web PC 端 | [https://shopmax.vercel.app](https://shopmax.vercel.app) |
-| 📱 移动端 H5 | [https://shopmax-m.vercel.app](https://shopmax-m.vercel.app) |
-| ⚙️ 管理后台 | [https://shopmax-admin.vercel.app](https://shopmax-admin.vercel.app) |
+| 🖥️ Web PC 端 | [https://shop-max-kr9t.vercel.app](https://shop-max-kr9t.vercel.app) |
+| 📱 移动端 H5 | [https://shop-max-kiqm.vercel.app](https://shop-max-kiqm.vercel.app) |
+| ⚙️ 管理后台 | [https://shop-max-mujl.vercel.app](https://shop-max-mujl.vercel.app) |
 
 > 后端 API 通过 VPS 部署，域名待配置。
 
