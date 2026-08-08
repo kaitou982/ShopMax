@@ -232,7 +232,6 @@ const goAddress = () => router.push('/user')
     <button class="submit-btn" :disabled="submitting || !address" @click="submit">
       {{ submitting ? '提交中...' : '提交订单' }}
     </button>
-  </div>
   </template>
 </div>
 
