@@ -58,7 +58,8 @@ public class NoteController {
     @Operation(summary = "笔记详情")
     @GetMapping("/notes/{id}")
     public Result<NoteDetailResponse> getDetail(@PathVariable Long id) {
-        return Result.success(noteService.getDetail(id));
+        Long currentUserId = getCurrentUserId();
+        return Result.success(noteService.getDetail(id, currentUserId));
     }
 
     @Operation(summary = "笔记列表（推荐/关注）")

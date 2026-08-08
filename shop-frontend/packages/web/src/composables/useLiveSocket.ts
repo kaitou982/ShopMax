@@ -1,4 +1,4 @@
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, watch, onMounted, onUnmounted, type Ref } from 'vue'
 
 export interface LiveSocketMessage {
   type: string
@@ -6,7 +6,7 @@ export interface LiveSocketMessage {
   timestamp: number
 }
 
-export function useLiveSocket(roomId: number) {
+export function useLiveSocket(roomId: string | number | Ref<string> | Ref<number>) {
   const isConnected = ref(false)
   const onlineCount = ref(0)
   const messages = ref<LiveSocketMessage[]>([])
@@ -16,12 +16,19 @@ export function useLiveSocket(roomId: number) {
   let reconnectCount = 0
   const maxReconnect = 3
 
+  const getRoomId = (): string => {
+    const id = typeof roomId === 'object' ? roomId.value : roomId
+    return String(id)
+  }
+
   const connect = () => {
+    const id = getRoomId()
+    if (!id || id === '0') return
     if (ws?.readyState === WebSocket.OPEN) return
 
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
     const host = window.location.host
-    const url = `${protocol}//${host}/ws/live/${roomId}`
+    const url = `${protocol}//${host}/ws/live/${id}`
 
     ws = new WebSocket(url)
 
@@ -37,8 +44,8 @@ export function useLiveSocket(roomId: number) {
         messages.value.push(msg)
 
         // 更新在线人数
-        if (msg.type === 'online') {
-          onlineCount.value = (msg.data as { count: number }).count
+        if (msg.type === 'online' && msg.data?.count != null) {
+          onlineCount.value = Number(msg.data.count) || 0
         }
       } catch (e) {
         console.error('[LiveSocket] 解析消息失败:', e)
@@ -101,6 +108,16 @@ export function useLiveSocket(roomId: number) {
 
   const sendGift = (giftId: number, count: number, nickname: string) => {
     send('gift', { giftId, count, nickname })
+  }
+
+  // 监听 roomId 变化，重新连接
+  if (typeof roomId === 'object') {
+    watch(roomId, (newId, oldId) => {
+      if (newId && newId !== oldId) {
+        disconnect()
+        connect()
+      }
+    })
   }
 
   onMounted(() => {

@@ -49,6 +49,14 @@ public class NotificationServiceImpl extends ServiceImpl<NotificationMapper, Not
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    public void markUnread(Long id) {
+        LambdaUpdateWrapper<Notification> wrapper = new LambdaUpdateWrapper<>();
+        wrapper.eq(Notification::getId, id).set(Notification::getIsRead, 0);
+        baseMapper.update(null, wrapper);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
     public void markAllRead() {
         LambdaUpdateWrapper<Notification> wrapper = new LambdaUpdateWrapper<>();
         wrapper.eq(Notification::getIsRead, 0).set(Notification::getIsRead, 1);

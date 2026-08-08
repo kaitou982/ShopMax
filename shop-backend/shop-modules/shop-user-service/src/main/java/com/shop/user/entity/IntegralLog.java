@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
 @TableName("ums_integral_log")
 public class IntegralLog implements Serializable {
     private static final long serialVersionUID = 1L;
-    @TableId(type = IdType.AUTO)
+    @TableId(type = IdType.ASSIGN_ID)
     private Long id;
     private Long userId;
     private Integer changeAmount;

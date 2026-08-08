@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 public class Notification implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    @TableId(type = IdType.AUTO)
+    @TableId(type = IdType.ASSIGN_ID)
     private Long id;
 
     /** 通知类型: 1退款申请 2入驻审核 3内容审核 4库存预警 */

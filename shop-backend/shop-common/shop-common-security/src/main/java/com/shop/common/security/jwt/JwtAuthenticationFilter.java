@@ -1,11 +1,12 @@
 package com.shop.common.security.jwt;
 
+import com.shop.common.security.BlacklistChecker;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -27,10 +28,17 @@ import java.util.List;
  */
 @Slf4j
 @Component
-@RequiredArgsConstructor
+@Order(1)
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
+
+    @Autowired(required = false)
+    private BlacklistChecker blacklistChecker;
+
+    public JwtAuthenticationFilter(JwtUtil jwtUtil) {
+        this.jwtUtil = jwtUtil;
+    }
 
     /**
      * 不需要验证Token的路径（仅匿名端点）
@@ -79,6 +87,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (StringUtils.hasText(token)) {
             // 验证Token
             if (jwtUtil.validateToken(token)) {
+                // 检查 Token 黑名单
+                if (blacklistChecker != null && blacklistChecker.isBlacklisted(token)) {
+                    log.warn("Token已在黑名单中，拒绝访问");
+                    filterChain.doFilter(request, response);
+                    return;
+                }
+
                 Long userId = jwtUtil.getUserIdFromToken(token);
                 String username = jwtUtil.getUsernameFromToken(token);
 

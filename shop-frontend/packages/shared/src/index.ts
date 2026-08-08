@@ -5,7 +5,7 @@ export type * from './types'
 export * from './api'
 
 // Utils
-export { setHttpClient, getHttpClient } from './utils'
+export { setHttpClient, getHttpClient, getMemberDiscount, getMemberDiscountLabel } from './utils'
 export type { HttpClient } from './utils'
 
 // Stores

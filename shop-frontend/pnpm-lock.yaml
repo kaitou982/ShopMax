@@ -28,6 +28,9 @@ importers:
       '@shop/shared':
         specifier: workspace:*
         version: link:../shared
+      hls.js:
+        specifier: ^1.5.0
+        version: 1.6.16
       pinia:
         specifier: ^2.1.7
         version: 2.3.1(typescript@5.9.3)(vue@3.4.21(typescript@5.9.3))

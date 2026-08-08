@@ -16,17 +16,21 @@ import com.shop.marketing.mapper.GroupBuyActivityMapper;
 import com.shop.marketing.mapper.GroupBuyGroupMapper;
 import com.shop.marketing.mapper.GroupBuyMemberMapper;
 import com.shop.marketing.service.GroupBuyService;
+import com.shop.common.feign.client.InternalOrderClient;
+import com.shop.common.feign.client.InternalPaymentClient;
+import com.shop.common.web.Result;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -36,7 +40,8 @@ public class GroupBuyServiceImpl extends ServiceImpl<GroupBuyActivityMapper, Gro
 
     private final GroupBuyGroupMapper groupMapper;
     private final GroupBuyMemberMapper memberMapper;
-    private final JdbcTemplate jdbcTemplate;
+    private final InternalOrderClient internalOrderClient;
+    private final InternalPaymentClient internalPaymentClient;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -232,18 +237,19 @@ public class GroupBuyServiceImpl extends ServiceImpl<GroupBuyActivityMapper, Gro
             for (GroupBuyMember member : members) {
                 if (member.getOrderNo() == null) continue;
                 try {
-                    // 取消订单（状态 6 = 已取消）
-                    jdbcTemplate.update(
-                            "UPDATE oms_order SET status = 6, update_time = NOW() WHERE order_no = ? AND status IN (0, 1)",
-                            member.getOrderNo());
-                    // 退款支付单（状态 3 = 已退款）
-                    int updated = jdbcTemplate.update(
-                            "UPDATE oms_payment SET status = 3, update_time = NOW() WHERE order_no = ? AND status = 2",
-                            member.getOrderNo());
-                    if (updated > 0) {
-                        log.info("拼团过期退款成功: groupId={}, userId={}, orderNo={}",
-                                group.getId(), member.getUserId(), member.getOrderNo());
-                    }
+                    // 取消订单（状态 6 = 已取消）via Feign
+                    Map<String, Object> orderReq = new HashMap<>();
+                    orderReq.put("orderNo", member.getOrderNo());
+                    orderReq.put("status", 6);
+                    internalOrderClient.updateOrderStatusByOrderNo(orderReq);
+
+                    // 退款支付单（状态 3 = 已退款）via Feign
+                    Map<String, Object> paymentReq = new HashMap<>();
+                    paymentReq.put("orderNo", member.getOrderNo());
+                    paymentReq.put("status", 3);
+                    internalPaymentClient.updatePaymentStatusByOrderNo(paymentReq);
+                    log.info("拼团过期退款成功: groupId={}, userId={}, orderNo={}",
+                            group.getId(), member.getUserId(), member.getOrderNo());
                 } catch (Exception e) {
                     log.error("拼团过期退款失败: groupId={}, userId={}, orderNo={}, error={}",
                             group.getId(), member.getUserId(), member.getOrderNo(), e.getMessage());

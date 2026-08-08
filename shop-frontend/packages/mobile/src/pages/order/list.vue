@@ -5,13 +5,14 @@ import { orderApi, type OrderDetail } from '@shop/shared'
 import { payMethods, doPay } from '@/utils/pay'
 
 const orders = ref<OrderDetail[]>([])
+const loading = ref(false)
 const sm: Record<number, string> = { 0: '待付款', 1: '待发货', 2: '待收货', 3: '已完成', 4: '已取消', 5: '退款中', 6: '已退款' }
 const showPaySheet = ref(false)
 const payingOrder = ref<OrderDetail | null>(null)
 const refundingId = ref<number | null>(null)
 
 onMounted(load)
-async function load() { try { orders.value = await orderApi.getMyOrders() } catch { /* optional */ } }
+async function load() { loading.value = true; try { orders.value = await orderApi.getMyOrders() } catch { /* optional */ } finally { loading.value = false } }
 
 function openPay(o: OrderDetail) { payingOrder.value = o; showPaySheet.value = true }
 async function handlePay(payType: number) {
@@ -23,11 +24,11 @@ async function handlePay(payType: number) {
 
 async function receive(o: OrderDetail) {
   const r = await new Promise<boolean>(resolve => uni.showModal({ title: '确认收货', content: '确认已收到商品？', success: res => resolve(res.confirm) }))
-  if (r) { await uni.showLoading({ title: '处理中...' }); await orderApi.confirmReceive(o.id); uni.hideLoading(); uni.showToast({ title: '已确认收货', icon: 'success' }); load() }
+  if (r) { try { await uni.showLoading({ title: '处理中...' }); await orderApi.confirmReceive(o.id); uni.showToast({ title: '已确认收货', icon: 'success' }); load() } catch { uni.showToast({ title: '确认收货失败', icon: 'none' }) } finally { uni.hideLoading() } }
 }
 async function cancel(o: OrderDetail) {
   const r = await new Promise<boolean>(resolve => uni.showModal({ title: '取消订单', content: '确定取消该订单？', success: res => resolve(res.confirm) }))
-  if (r) { await uni.showLoading({ title: '取消中...' }); await orderApi.cancel(o.id, '取消'); uni.hideLoading(); uni.showToast({ title: '已取消', icon: 'success' }); load() }
+  if (r) { try { await uni.showLoading({ title: '取消中...' }); await orderApi.cancel(o.id, '取消'); uni.showToast({ title: '已取消', icon: 'success' }); load() } catch { uni.showToast({ title: '取消订单失败', icon: 'none' }) } finally { uni.hideLoading() } }
 }
 async function applyRefund(o: OrderDetail) {
   if (refundingId.value) return
@@ -40,7 +41,8 @@ const goDetail = (id: number) => uni.navigateTo({ url: `/pages/order/detail?id=$
 </script>
 <template>
   <view class="ol-page">
-    <view v-if="!orders.length" class="ol-empty">暂无订单</view>
+    <view v-if="loading" class="ol-empty">加载中...</view>
+    <view v-else-if="!orders.length" class="ol-empty">暂无订单</view>
     <view class="ol-card" v-for="o in orders" :key="o.id" @click="goDetail(o.id)">
       <view class="ol-hd"><text class="ol-no">订单号: {{ o.orderNo }}</text><text class="ol-st" :style="{color: o.status===0?'#FF5000':o.status===5?'#FF5000':'#999'}">{{ sm[o.status] }}</text></view>
       <view class="ol-row"><text class="ol-label">金额</text><text class="ol-val">¥{{ o.payAmount?.toFixed(2) }}</text></view>

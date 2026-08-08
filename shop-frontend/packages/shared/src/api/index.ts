@@ -1,5 +1,5 @@
-export { userApi } from './user'
-export { productApi, categoryApi, brandApi } from './product'
+export { userApi, walletApi } from './user'
+export { productApi, categoryApi, brandApi, newProductBannerApi } from './product'
 export { orderApi } from './order'
 export { addressApi } from './address'
 export { communityApi } from './community'

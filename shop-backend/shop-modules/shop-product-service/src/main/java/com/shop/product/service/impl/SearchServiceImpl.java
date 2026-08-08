@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.shop.common.redis.RedisUtil;
 import com.shop.product.controller.response.HotKeywordResponse;
 import com.shop.product.controller.response.SuggestResponse;
+import com.shop.product.elasticsearch.ProductDocument;
+import com.shop.product.elasticsearch.ProductSearchService;
 import com.shop.product.entity.Product;
 import com.shop.product.entity.SearchKeyword;
 import com.shop.product.mapper.ProductMapper;
@@ -11,10 +13,15 @@ import com.shop.product.mapper.SearchKeywordMapper;
 import com.shop.product.service.SearchService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -36,6 +43,9 @@ public class SearchServiceImpl implements SearchService {
     private final SearchKeywordMapper searchKeywordMapper;
     private final ProductMapper productMapper;
     private final RedisUtil redisUtil;
+
+    @Autowired(required = false)
+    private ProductSearchService productSearchService;
 
     @Override
     @Async
@@ -129,5 +139,42 @@ public class SearchServiceImpl implements SearchService {
             log.warn("Redis写入建议缓存失败", e);
         }
         return response;
+    }
+
+    @Override
+    public Map<String, Object> searchProducts(String keyword, int pageNum, int pageSize) {
+        Map<String, Object> result = new java.util.HashMap<>();
+
+        // 优先使用 Elasticsearch
+        if (productSearchService != null) {
+            try {
+                Page<ProductDocument> esResult = productSearchService.search(keyword, pageNum, pageSize);
+                result.put("records", esResult.getContent());
+                result.put("total", esResult.getTotalElements());
+                result.put("pageNum", pageNum);
+                result.put("pageSize", pageSize);
+                return result;
+            } catch (Exception e) {
+                log.warn("ES搜索失败，降级到MySQL: keyword={}, error={}", keyword, e.getMessage());
+            }
+        }
+
+        // 降级到 MySQL 搜索
+        LambdaQueryWrapper<Product> wrapper = new LambdaQueryWrapper<>();
+        wrapper.like(Product::getName, keyword);
+        wrapper.eq(Product::getStatus, 1);
+        wrapper.eq(Product::getDeleted, 0);
+        wrapper.orderByDesc(Product::getSales);
+
+        com.baomidou.mybatisplus.extension.plugins.pagination.Page<Product> page =
+                new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>(pageNum, pageSize);
+        com.baomidou.mybatisplus.extension.plugins.pagination.Page<Product> dbResult =
+                productMapper.selectPage(page, wrapper);
+
+        result.put("records", dbResult.getRecords());
+        result.put("total", dbResult.getTotal());
+        result.put("pageNum", pageNum);
+        result.put("pageSize", pageSize);
+        return result;
     }
 }

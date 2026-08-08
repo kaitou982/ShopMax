@@ -4,31 +4,43 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.shop.common.enums.MemberLevelConstants;
 import com.shop.common.enums.OrderStatus;
 import com.shop.common.enums.PayMethod;
 import com.shop.common.exception.BusinessException;
+import com.shop.common.feign.client.InternalCouponClient;
+import com.shop.common.feign.client.InternalPaymentClient;
+import com.shop.common.feign.client.InternalProductClient;
+import com.shop.common.feign.client.InternalUserClient;
+import com.shop.common.feign.client.NotificationClient;
 import com.shop.common.web.PageResult;
+import com.shop.common.web.Result;
 import com.shop.order.entity.Order;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import com.shop.order.entity.OrderItem;
 import com.shop.order.entity.OrderLog;
+import com.shop.order.entity.RefundRecord;
 import com.shop.order.mapper.CouponReceiveMapper;
 import com.shop.order.mapper.OrderItemMapper;
 import com.shop.order.mapper.OrderLogMapper;
 import com.shop.order.mapper.OrderMapper;
+import com.shop.order.mapper.RefundRecordMapper;
+import com.shop.order.mq.OrderMessageProducer;
 import com.shop.order.service.OrderService;
+import io.seata.spring.annotation.GlobalTransactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -47,7 +59,21 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
     private final CouponReceiveMapper couponReceiveMapper;
     private final OrderItemMapper orderItemMapper;
     private final OrderLogMapper orderLogMapper;
-    private final JdbcTemplate jdbcTemplate;
+    private final RefundRecordMapper refundRecordMapper;
+    private final InternalCouponClient internalCouponClient;
+    private final OrderMessageProducer orderMessageProducer;
+
+    @Autowired(required = false)
+    private InternalUserClient internalUserClient;
+
+    @Autowired(required = false)
+    private InternalProductClient internalProductClient;
+
+    @Autowired(required = false)
+    private InternalPaymentClient internalPaymentClient;
+
+    @Autowired(required = false)
+    private NotificationClient notificationClient;
 
     /** 订单超时时间（分钟） */
     private static final int ORDER_TIMEOUT_MINUTES = 30;
@@ -87,11 +113,30 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
     }
 
     @Override
+    @GlobalTransactional(name = "create-order-tx", rollbackFor = Exception.class)
     @Transactional(rollbackFor = Exception.class)
     public Order create(Order order) {
         // 计算运费
         BigDecimal freight = calculateFreight(order.getTotalAmount());
         order.setFreightAmount(freight);
+
+        // 会员等级折扣（银卡98折、金卡95折、钻石9折）
+        int memberLevel = 1;
+        try {
+            if (internalUserClient != null) {
+                Result<Integer> levelResult = internalUserClient.getMemberLevel(order.getUserId());
+                if (levelResult != null && levelResult.getCode() == 200 && levelResult.getData() != null) {
+                    memberLevel = levelResult.getData();
+                }
+            }
+        } catch (Exception e) {
+            log.warn("查询用户等级失败，使用默认等级: userId={}, error={}", order.getUserId(), e.getMessage());
+        }
+        double levelDiscount = MemberLevelConstants.getDiscount(memberLevel);
+        if (levelDiscount < 1.0) {
+            order.setTotalAmount(order.getTotalAmount().multiply(BigDecimal.valueOf(levelDiscount))
+                    .setScale(2, RoundingMode.HALF_UP));
+        }
 
         // 校验 + 核销优惠券
         BigDecimal totalDiscount = BigDecimal.ZERO;
@@ -124,11 +169,13 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
                 integralDeducted = maxIntegralDiscount;
             }
             int actualIntegralUse = integralDeducted.multiply(new BigDecimal("100")).intValue();
-            jdbcTemplate.update("UPDATE ums_user SET integral = integral - ? WHERE id = ? AND integral >= ?",
-                    actualIntegralUse, order.getUserId(), actualIntegralUse);
-            jdbcTemplate.update("INSERT INTO ums_integral_log(user_id, change_amount, after_amount, type, biz_id, remark, create_time) " +
-                    "SELECT ?, ?, integral, 5, ?, '积分抵扣订单', NOW() FROM ums_user WHERE id = ?",
-                    order.getUserId(), -actualIntegralUse, order.getOrderNo(), order.getUserId());
+            if (internalUserClient != null) {
+                Result<Void> deductResult = internalUserClient.deductIntegral(order.getUserId(),
+                        Map.of("amount", actualIntegralUse, "description", "积分抵扣订单"));
+                if (deductResult == null || deductResult.getCode() != 200) {
+                    throw new BusinessException("积分扣减失败: " + (deductResult != null ? deductResult.getMessage() : "服务不可用"));
+                }
+            }
             realPay = realPay.subtract(integralDeducted);
             if (realPay.compareTo(BigDecimal.ZERO) < 0) realPay = BigDecimal.ZERO;
         }
@@ -158,11 +205,12 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
                 item.setOrderId(order.getId());
                 item.setSubtotal(item.getPrice().multiply(new BigDecimal(item.getQuantity())));
                 orderItemMapper.insert(item);
-                int affected = jdbcTemplate.update(
-                        "UPDATE pms_product SET stock = stock - ? WHERE id = ? AND stock >= ? AND deleted = 0",
-                        item.getQuantity(), item.getProductId(), item.getQuantity());
-                if (affected == 0) {
-                    throw new BusinessException("商品 [" + item.getProductName() + "] 库存不足");
+                if (internalProductClient != null) {
+                    Result<Void> stockResult = internalProductClient.deductStock(item.getProductId(),
+                            Map.of("quantity", item.getQuantity()));
+                    if (stockResult == null || stockResult.getCode() != 200) {
+                        throw new BusinessException("商品 [" + item.getProductName() + "] 库存不足");
+                    }
                 }
             }
         }
@@ -174,6 +222,14 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         log.info("创建订单成功: orderNo={}, userId={}, total={}, freight={}, discount={}, pay={}",
                 order.getOrderNo(), order.getUserId(), order.getTotalAmount(),
                 order.getFreightAmount(), order.getCouponAmount(), order.getPayAmount());
+
+        // 发送订单创建消息到 RocketMQ
+        try {
+            orderMessageProducer.sendOrderCreatedMessage(order.getId(), order.getUserId());
+        } catch (Exception e) {
+            log.warn("发送订单创建消息失败: orderNo={}, error={}", order.getOrderNo(), e.getMessage());
+        }
+
         return order;
     }
 
@@ -181,7 +237,8 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
      * 校验并核销单张优惠券
      */
     private BigDecimal validateAndUseCoupon(Order order, Long receiveId, BigDecimal freight, Long firstCouponId) {
-        Map<String, Object> detail = couponReceiveMapper.selectCouponDetail(receiveId, order.getUserId());
+        Result<Map<String, Object>> detailResult = internalCouponClient.getCouponDetail(receiveId, order.getUserId());
+        Map<String, Object> detail = detailResult.getData();
         if (detail == null || detail.isEmpty()) {
             throw new BusinessException("优惠券不存在或不属于当前用户");
         }
@@ -217,10 +274,17 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
 
         // 叠加校验
         if (firstCouponId != null) {
-            Map<String, Object> firstDetail = couponReceiveMapper.selectCouponDetail(firstCouponId, order.getUserId());
+            if (firstCouponId.equals(receiveId)) {
+                throw new BusinessException("不可重复使用同一张优惠券");
+            }
+            Map<String, Object> firstDetail = internalCouponClient.getCouponDetail(firstCouponId, order.getUserId()).getData();
             int firstStackable = ((Number) firstDetail.get("stackable")).intValue();
             if (firstStackable == 0 || stackable == 0) {
                 throw new BusinessException("该优惠券不可叠加使用");
+            }
+            int firstCouponType = ((Number) firstDetail.get("coupon_type")).intValue();
+            if (firstCouponType == couponType) {
+                throw new BusinessException("不可使用同类型优惠券");
             }
         }
 
@@ -260,9 +324,14 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
             discount = order.getTotalAmount();
         }
 
-        // 核销
-        int updated = couponReceiveMapper.useCoupon(receiveId, order.getUserId(), order.getId(), order.getOrderNo());
-        if (updated == 0) {
+        // 核销 via Feign
+        Map<String, Object> useReq = new HashMap<>();
+        useReq.put("id", receiveId);
+        useReq.put("userId", order.getUserId());
+        useReq.put("orderId", order.getId());
+        useReq.put("orderNo", order.getOrderNo());
+        Result<Void> useResult = internalCouponClient.useCoupon(useReq);
+        if (useResult.getCode() != 200) {
             throw new BusinessException("优惠券不可用");
         }
 
@@ -277,6 +346,8 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         }
         return DEFAULT_FREIGHT;
     }
+
+    // getLevelDiscount 已移至 MemberLevelConstants.getDiscount()
 
     private BigDecimal toDecimal(Object value) {
         if (value == null) return BigDecimal.ZERO;
@@ -296,6 +367,13 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         cancelOrderAndRestoreStock(entity, reason);
 
         saveOrderLog(id, entity.getOrderNo(), oldStatus, "CANCEL", reason, getCurrentUserIdOrNull());
+
+        // 发送订单取消消息到 RocketMQ
+        try {
+            orderMessageProducer.sendOrderCancelledMessage(entity.getId(), entity.getUserId());
+        } catch (Exception e) {
+            log.warn("发送订单取消消息失败: orderNo={}, error={}", entity.getOrderNo(), e.getMessage());
+        }
     }
 
     /** 取消订单 + 恢复库存（内部方法，被 cancel 和 autoCancel 共用） */
@@ -308,17 +386,29 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         // 恢复库存
         List<OrderItem> items = orderItemMapper.selectByOrderId(entity.getId());
         for (OrderItem item : items) {
-            jdbcTemplate.update(
-                    "UPDATE pms_product SET stock = stock + ? WHERE id = ? AND deleted = 0",
-                    item.getQuantity(), item.getProductId());
+            if (internalProductClient != null) {
+                try {
+                    internalProductClient.restoreStock(item.getProductId(),
+                            Map.of("quantity", item.getQuantity()));
+                } catch (Exception e) {
+                    log.warn("恢复库存失败: productId={}, quantity={}, error={}",
+                            item.getProductId(), item.getQuantity(), e.getMessage());
+                }
+            }
         }
 
-        // 如果使用了优惠券，退还优惠券
+        // 如果使用了优惠券，退还优惠券 via Feign
         if (entity.getUserCouponId() != null) {
-            couponReceiveMapper.restoreCoupon(entity.getUserCouponId(), entity.getUserId());
+            Map<String, Object> restoreReq = new HashMap<>();
+            restoreReq.put("id", entity.getUserCouponId());
+            restoreReq.put("userId", entity.getUserId());
+            internalCouponClient.restoreCoupon(restoreReq);
         }
         if (entity.getUserCouponId2() != null) {
-            couponReceiveMapper.restoreCoupon(entity.getUserCouponId2(), entity.getUserId());
+            Map<String, Object> restoreReq2 = new HashMap<>();
+            restoreReq2.put("id", entity.getUserCouponId2());
+            restoreReq2.put("userId", entity.getUserId());
+            internalCouponClient.restoreCoupon(restoreReq2);
         }
     }
 
@@ -335,14 +425,13 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         // 余额支付
         if (payType != null && payType == PayMethod.BALANCE.getCode()) {
             BigDecimal payAmount = entity.getPayAmount();
-            int updated = jdbcTemplate.update(
-                "UPDATE ums_user SET balance = balance - ? WHERE id = ? AND balance >= ?",
-                payAmount, entity.getUserId(), payAmount);
-            if (updated == 0) throw new BusinessException("余额不足");
-            jdbcTemplate.update(
-                "INSERT INTO ums_balance_log(user_id, change_amount, after_amount, type, biz_id, remark, create_time) " +
-                "SELECT ?, ?, balance, 2, ?, '余额支付订单', NOW() FROM ums_user WHERE id = ?",
-                entity.getUserId(), payAmount.negate(), entity.getOrderNo(), entity.getUserId());
+            if (internalUserClient != null) {
+                Result<Void> balanceResult = internalUserClient.deductBalance(entity.getUserId(),
+                        Map.of("amount", payAmount, "description", "余额支付订单"));
+                if (balanceResult == null || balanceResult.getCode() != 200) {
+                    throw new BusinessException("余额不足");
+                }
+            }
         }
 
         entity.setStatus(OrderStatus.PENDING_SHIP.getCode());
@@ -354,6 +443,13 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         saveOrderLog(id, entity.getOrderNo(), oldStatus, "PAY",
                 "支付成功，支付方式: " + payDesc, getCurrentUserIdOrNull());
         log.info("支付订单成功: id={}, payType={}", id, payType);
+
+        // 发送订单支付成功消息到 RocketMQ
+        try {
+            orderMessageProducer.sendOrderPaidMessage(entity.getId(), entity.getUserId());
+        } catch (Exception e) {
+            log.warn("发送订单支付消息失败: orderNo={}, error={}", entity.getOrderNo(), e.getMessage());
+        }
     }
 
     @Override
@@ -388,33 +484,38 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
 
         // 奖励积分
         int earnedIntegral = entity.getPayAmount().multiply(new BigDecimal("10")).intValue();
-        if (earnedIntegral > 0) {
-            jdbcTemplate.update("UPDATE ums_user SET integral = integral + ? WHERE id = ?",
-                    earnedIntegral, entity.getUserId());
-            jdbcTemplate.update("INSERT INTO ums_integral_log(user_id, change_amount, after_amount, type, biz_id, remark, create_time) " +
-                    "SELECT ?, ?, integral, 3, ?, '订单完成奖励', NOW() FROM ums_user WHERE id = ?",
-                    entity.getUserId(), earnedIntegral, entity.getOrderNo(), entity.getUserId());
+        if (earnedIntegral > 0 && internalUserClient != null) {
+            try {
+                internalUserClient.addIntegral(entity.getUserId(),
+                        Map.of("amount", earnedIntegral, "description", "订单完成奖励"));
+            } catch (Exception e) {
+                log.warn("奖励积分失败: userId={}, amount={}, error={}", entity.getUserId(), earnedIntegral, e.getMessage());
+            }
         }
 
         // 增加成长值 + 升级会员
         int growthToAdd = entity.getPayAmount().intValue();
-        if (growthToAdd > 0) {
-            jdbcTemplate.update("UPDATE ums_user SET growth_value = growth_value + ? WHERE id = ?",
-                    growthToAdd, entity.getUserId());
-            jdbcTemplate.update(
-                "UPDATE ums_user SET member_level = CASE " +
-                "WHEN growth_value >= 10000 THEN 4 " +
-                "WHEN growth_value >= 2000 THEN 3 " +
-                "WHEN growth_value >= 500 THEN 2 " +
-                "ELSE 1 END WHERE id = ?", entity.getUserId());
+        if (growthToAdd > 0 && internalUserClient != null) {
+            try {
+                internalUserClient.addGrowthValue(entity.getUserId(),
+                        Map.of("amount", growthToAdd));
+            } catch (Exception e) {
+                log.warn("增加成长值失败: userId={}, amount={}, error={}", entity.getUserId(), growthToAdd, e.getMessage());
+            }
         }
 
         // 增加商品销量
         List<OrderItem> items = orderItemMapper.selectByOrderId(id);
         for (OrderItem item : items) {
-            jdbcTemplate.update(
-                    "UPDATE pms_product SET sales = sales + ? WHERE id = ? AND deleted = 0",
-                    item.getQuantity(), item.getProductId());
+            if (internalProductClient != null) {
+                try {
+                    internalProductClient.addSales(item.getProductId(),
+                            Map.of("quantity", item.getQuantity()));
+                } catch (Exception e) {
+                    log.warn("增加销量失败: productId={}, quantity={}, error={}",
+                            item.getProductId(), item.getQuantity(), e.getMessage());
+                }
+            }
         }
 
         saveOrderLog(id, entity.getOrderNo(), oldStatus, "CONFIRM",
@@ -440,26 +541,51 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
                 ? null : findPaymentNoByOrderId(id);
         String refundNo = "RF" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"))
                 + String.format("%04d", new Random().nextInt(10000));
-        jdbcTemplate.update(
-            "INSERT INTO oms_refund_record(refund_no, payment_no, order_no, user_id, refund_amount, "
-            + "refund_reason, status, pay_method, create_time) VALUES (?, ?, ?, ?, ?, ?, 0, ?, NOW())",
-            refundNo, paymentNo, entity.getOrderNo(), entity.getUserId(),
-            entity.getPayAmount(), reason, entity.getPayType());
+        RefundRecord refundRecord = new RefundRecord();
+        refundRecord.setRefundNo(refundNo);
+        refundRecord.setPaymentNo(paymentNo);
+        refundRecord.setOrderNo(entity.getOrderNo());
+        refundRecord.setUserId(entity.getUserId());
+        refundRecord.setRefundAmount(entity.getPayAmount());
+        refundRecord.setRefundReason(reason);
+        refundRecord.setStatus(0);
+        refundRecord.setPayMethod(entity.getPayType());
+        refundRecordMapper.insert(refundRecord);
         log.info("退款记录已创建: refundNo={}, orderNo={}, payMethod={}", refundNo, entity.getOrderNo(), entity.getPayType());
 
         saveOrderLog(id, entity.getOrderNo(), oldStatus, "REFUND_APPLY",
                 "申请退款: " + reason, getCurrentUserIdOrNull());
 
         log.info("退款申请: id={}, reason={}", id, reason);
+
+        // 通知管理员有新的退款申请
+        try {
+            if (notificationClient != null) {
+                Map<String, Object> notif = new HashMap<>();
+                notif.put("type", 1);
+                notif.put("title", "新的退款申请");
+                notif.put("content", "订单 " + entity.getOrderNo() + " 申请退款 ¥" + entity.getPayAmount() + "，原因: " + reason);
+                notif.put("refId", id);
+                notif.put("refType", "refund");
+                notificationClient.createNotification(notif);
+            }
+        } catch (Exception e) {
+            log.warn("发送退款申请通知失败: {}", e.getMessage());
+        }
     }
 
     /** 通过订单ID查找支付单号 */
     private String findPaymentNoByOrderId(Long orderId) {
         try {
-            Map<String, Object> row = jdbcTemplate.queryForMap(
-                    "SELECT payment_no FROM oms_payment WHERE order_id = ? AND status = 1 LIMIT 1", orderId);
-            return (String) row.get("payment_no");
+            if (internalPaymentClient != null) {
+                Result<String> result = internalPaymentClient.getPaymentNoByOrderId(orderId);
+                if (result != null && result.getCode() == 200) {
+                    return result.getData();
+                }
+            }
+            return null;
         } catch (Exception e) {
+            log.warn("查询支付单号失败: orderId={}, error={}", orderId, e.getMessage());
             return null;
         }
     }
@@ -594,5 +720,100 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
             // 日志写入失败不影响主流程
             log.warn("保存订单日志异常: orderId={}, action={}, error={}", orderId, action, e.getMessage());
         }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void updateOrderStatus(Long orderId, Integer status) {
+        Order entity = getEntityById(orderId);
+        entity.setStatus(status);
+        baseMapper.updateById(entity);
+        log.info("更新订单状态成功: orderId={}, status={}", orderId, status);
+    }
+
+    @Override
+    public Map<String, Object> getOrderBasicInfo(Long orderId) {
+        Order entity = getEntityById(orderId);
+        Map<String, Object> info = new HashMap<>();
+        info.put("id", entity.getId());
+        info.put("order_no", entity.getOrderNo());
+        info.put("status", entity.getStatus());
+        info.put("pay_amount", entity.getPayAmount());
+        info.put("user_id", entity.getUserId());
+        return info;
+    }
+
+    @Override
+    public Map<String, Object> getOrderInfoByOrderNo(String orderNo) {
+        LambdaQueryWrapper<Order> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Order::getOrderNo, orderNo);
+        wrapper.eq(Order::getDeleted, 0);
+        Order entity = baseMapper.selectOne(wrapper);
+        if (entity == null) {
+            throw new BusinessException("订单不存在: " + orderNo);
+        }
+        Map<String, Object> info = new HashMap<>();
+        info.put("id", entity.getId());
+        info.put("order_no", entity.getOrderNo());
+        info.put("status", entity.getStatus());
+        info.put("pay_amount", entity.getPayAmount());
+        info.put("user_id", entity.getUserId());
+        return info;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void updateOrderStatusByOrderNo(String orderNo, Integer status) {
+        LambdaUpdateWrapper<Order> wrapper = new LambdaUpdateWrapper<>();
+        wrapper.eq(Order::getOrderNo, orderNo);
+        wrapper.eq(Order::getDeleted, 0);
+        wrapper.set(Order::getStatus, status);
+        baseMapper.update(null, wrapper);
+        log.info("根据订单号更新状态成功: orderNo={}, status={}", orderNo, status);
+    }
+
+    @Override
+    public List<Map<String, Object>> getOrderItems(Long orderId) {
+        LambdaQueryWrapper<OrderItem> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(OrderItem::getOrderId, orderId);
+        wrapper.eq(OrderItem::getDeleted, 0);
+        List<OrderItem> items = orderItemMapper.selectList(wrapper);
+        return items.stream().map(item -> {
+            Map<String, Object> map = new HashMap<>();
+            map.put("product_id", item.getProductId());
+            map.put("quantity", item.getQuantity());
+            return map;
+        }).toList();
+    }
+
+    @Override
+    public Map<String, Object> getDashboardStats() {
+        Map<String, Object> stats = new HashMap<>();
+
+        // 今日销售额
+        BigDecimal todaySales = baseMapper.sumTodaySales();
+        stats.put("today_sales", todaySales != null ? todaySales : BigDecimal.ZERO);
+
+        // 今日订单数
+        Long todayOrders = baseMapper.countTodayOrders();
+        stats.put("today_orders", todayOrders != null ? todayOrders : 0L);
+
+        // 待处理订单数
+        Long pendingOrders = baseMapper.countPendingOrders();
+        stats.put("pending_orders", pendingOrders != null ? pendingOrders : 0L);
+
+        // 昨日销售额
+        BigDecimal yesterdaySales = baseMapper.sumYesterdaySales();
+        stats.put("yesterday_sales", yesterdaySales != null ? yesterdaySales : BigDecimal.ZERO);
+
+        // 昨日订单数
+        Long yesterdayOrders = baseMapper.countYesterdayOrders();
+        stats.put("yesterday_orders", yesterdayOrders != null ? yesterdayOrders : 0L);
+
+        // 7天销售趋势
+        List<Map<String, Object>> salesTrend = baseMapper.salesTrend7Days();
+        stats.put("sales_trend_7days", salesTrend != null ? salesTrend : Collections.emptyList());
+
+        return stats;
     }
 }

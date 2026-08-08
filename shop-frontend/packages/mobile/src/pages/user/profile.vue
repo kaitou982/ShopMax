@@ -28,7 +28,7 @@ const save = async () => {
     <view class="pf-item">
       <text>头像</text>
       <view class="pf-avatar-wrap">
-        <image :src="form.avatar || '/static/default-avatar.png'" class="pf-avatar" mode="aspectFill" />
+        <image :src="form.avatar || '/api/v1/files/default/avatar'" class="pf-avatar" mode="aspectFill" />
         <input v-model="form.avatar" class="pf-url-input" placeholder="输入头像URL" />
       </view>
     </view>

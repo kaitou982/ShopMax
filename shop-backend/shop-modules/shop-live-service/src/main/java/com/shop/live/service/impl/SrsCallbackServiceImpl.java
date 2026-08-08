@@ -81,7 +81,20 @@ public class SrsCallbackServiceImpl implements SrsCallbackService {
      * 处理推流开始回调
      */
     private String handleOnPublish(Long roomId, String param) {
-        // 1. 验证推流白名单
+        // 1. 查询直播间
+        LiveRoom room = liveRoomMapper.selectById(roomId);
+        if (room == null) {
+            log.error("推流回调: 直播间不存在, roomId={}", roomId);
+            return "1";
+        }
+
+        // 2. 如果房间已经是直播中状态（SRS 重连场景），直接允许
+        if (room.getStatus() == 1) {
+            log.info("推流重连: roomId={}, 房间已是直播中状态, 允许推流", roomId);
+            return "0";
+        }
+
+        // 3. 验证推流白名单（首次推流）
         String whitelistKey = PUSH_WHITELIST_KEY + roomId;
         String storedToken = redisUtil.get(whitelistKey);
 
@@ -90,28 +103,22 @@ public class SrsCallbackServiceImpl implements SrsCallbackService {
             return "1"; // 拒绝推流
         }
 
-        // 2. 从 param 中提取 token 并验证
+        // 4. 从 param 中提取 token 并验证
         String token = extractTokenFromParam(param);
         if (token != null && !token.equals(storedToken)) {
             log.warn("推流鉴权失败: token不匹配, roomId={}", roomId);
             return "1"; // 拒绝推流
         }
 
-        // 3. 更新房间状态为"直播中"
-        LiveRoom room = liveRoomMapper.selectById(roomId);
-        if (room == null) {
-            log.error("推流回调: 直播间不存在, roomId={}", roomId);
-            return "1";
-        }
-
+        // 5. 更新房间状态为"直播中"
         room.setStatus(1); // 直播中
         room.setActualStartTime(LocalDateTime.now());
         liveRoomMapper.updateById(room);
 
-        // 4. 更新 Redis 状态
+        // 6. 更新 Redis 状态
         redisUtil.set(ROOM_STATUS_KEY + roomId, 1);
 
-        // 5. 清除白名单（已验证通过）
+        // 7. 清除白名单（已验证通过）
         redisUtil.delete(whitelistKey);
 
         log.info("推流开始: roomId={}, 状态已更新为直播中", roomId);

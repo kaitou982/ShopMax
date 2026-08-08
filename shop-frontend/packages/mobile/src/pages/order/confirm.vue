@@ -1,9 +1,10 @@
 <script setup lang="ts">defineOptions({ name: 'OrderConfirm' })
 import { ref, computed, onMounted } from 'vue'
-import { orderApi, addressApi, couponApi, type AddressInfo, type CouponReceive } from '@shop/shared'
-import { useCartStore } from '@/stores'
+import { orderApi, addressApi, couponApi, getMemberDiscount, type AddressInfo, type CouponReceive } from '@shop/shared'
+import { useCartStore, useUserStore } from '@/stores'
 
 const cartStore = useCartStore()
+const userStore = useUserStore()
 const goAddress = () => uni.navigateTo({ url: '/pages/user/address' })
 const address = ref<AddressInfo | null>(null)
 const submitting = ref(false)
@@ -23,7 +24,25 @@ const couponDiscount = computed(() => {
   return Number(c.discountAmount || 0)
 })
 
-const finalPay = computed(() => Math.max(0, total.value + freight.value - couponDiscount.value))
+// 会员等级折扣
+const memberLevel = computed(() => userStore.userInfo?.memberLevel || 1)
+const memberDiscountRate = computed(() => getMemberDiscount(memberLevel.value))
+const memberDiscount = computed(() => {
+  if (memberDiscountRate.value >= 1) return 0
+  return Number((total.value * (1 - memberDiscountRate.value)).toFixed(2))
+})
+
+// 积分抵扣
+const useIntegral = ref(false)
+const integralBalance = computed(() => userStore.userInfo?.integral || 0)
+const maxIntegralDeduct = computed(() => {
+  if (integralBalance.value <= 0) return 0
+  const afterCoupon = total.value * memberDiscountRate.value + freight.value - couponDiscount.value
+  return Math.min(integralBalance.value / 100, afterCoupon * 0.5)
+})
+const integralDiscount = computed(() => useIntegral.value ? Number(maxIntegralDeduct.value.toFixed(2)) : 0)
+
+const finalPay = computed(() => Math.max(0, total.value * memberDiscountRate.value + freight.value - couponDiscount.value - integralDiscount.value))
 
 onMounted(async () => {
   try { address.value = await addressApi.getDefault() } catch {
@@ -56,7 +75,9 @@ const submit = async () => {
   try {
     await orderApi.create({
       totalAmount: total.value, payAmount: finalPay.value, freightAmount: freight.value,
-      couponAmount: couponDiscount.value, userCouponId: selectedCoupon.value?.id,
+      couponAmount: couponDiscount.value, integralAmount: integralDiscount.value,
+      useIntegral: useIntegral.value ? Math.floor(integralDiscount.value * 100) : 0,
+      userCouponId: selectedCoupon.value?.id,
       receiverName: address.value.receiverName, receiverPhone: address.value.receiverPhone,
       receiverAddress: address.value.fullAddress, sourceType: 3,
       items: cartStore.selectedItems.map(i=>({ productId:i.productId, productName:i.name, productImage:i.image, price:i.price, quantity:i.quantity })),
@@ -85,6 +106,7 @@ const submit = async () => {
         <view class="oci-info"><text class="oci-name">{{ item.name }}</text><text class="oci-price">¥{{ item.price }} x{{ item.quantity }}</text></view>
       </view>
     </view>
+    <view class="oc-row" v-if="memberDiscount > 0"><text>会员折扣</text><text class="val" style="color:#FF5000">-¥{{ memberDiscount.toFixed(2) }}</text></view>
     <view class="oc-row"><text>运费</text><text class="val">¥{{ freight }}</text></view>
     <view class="oc-row" @click="showCouponPicker = true">
       <text>优惠券</text>
@@ -93,7 +115,15 @@ const submit = async () => {
         <uni-icons type="right" size="16" :color="selectedCoupon ? '#FF5000' : '#ccc'" />
       </view>
     </view>
-    <view class="oc-row"><text>优惠</text><text class="val" style="color:#FF5000">-¥{{ couponDiscount.toFixed(2) }}</text></view>
+    <view class="oc-row" v-if="couponDiscount > 0"><text>优惠券抵扣</text><text class="val" style="color:#FF5000">-¥{{ couponDiscount.toFixed(2) }}</text></view>
+    <view class="oc-row" v-if="integralBalance > 0" @click="useIntegral = !useIntegral">
+      <text>积分抵扣</text>
+      <view class="oc-row-right">
+        <text class="val" v-if="integralDiscount > 0" style="color:#FF5000">-¥{{ integralDiscount.toFixed(2) }}</text>
+        <text class="val" v-else style="color:#999">{{ integralBalance }}积分可用</text>
+        <switch :checked="useIntegral" color="#FF5000" @change="useIntegral = !useIntegral" />
+      </view>
+    </view>
     <view class="oc-row b"><text>实付</text><text class="val" style="color:#FF5000;font-size:36rpx;font-weight:700">¥{{ finalPay.toFixed(2) }}</text></view>
     <view class="oc-bar"><button class="oc-btn" @click="submit" :loading="submitting">提交订单</button></view>
 

@@ -113,3 +113,56 @@ export const onShelfProduct = (id: number) => {
 export const offShelfProduct = (id: number) => {
   return put(`/api/v1/products/${id}/off-shelf`)
 }
+
+// ==================== 新品管理 ====================
+
+export interface NewProductBanner {
+  id: number
+  title: string
+  imageUrl: string
+  productId: number | null
+  linkUrl: string | null
+  sort: number
+  status: number
+  startTime: string | null
+  endTime: string | null
+  createTime: string
+}
+
+// 新品商品管理
+export const getNewProductList = (params: { pageNum?: number; pageSize?: number; categoryId?: number }) => {
+  return get<{ records: Product[]; total: number }>('/api/v1/admin/products/new', params)
+}
+
+export const batchMarkNew = (ids: number[]) => {
+  return put('/api/v1/admin/products/new/batch-mark', { ids })
+}
+
+export const batchUnmarkNew = (ids: number[]) => {
+  return put('/api/v1/admin/products/new/batch-unmark', { ids })
+}
+
+export const updateNewProductSettings = (id: number, data: { sort?: number; startTime?: string; endTime?: string }) => {
+  return put(`/api/v1/admin/products/${id}/new-settings`, data)
+}
+
+export const getNewProductStats = () => {
+  return get<{ total: number; active: number; expiring: number; todayNew: number }>('/api/v1/admin/products/new/stats')
+}
+
+// 新品Banner管理
+export const getNewProductBanners = (params?: { pageNum?: number; pageSize?: number }) => {
+  return get<PageResult<NewProductBanner>>('/api/v1/admin/new-product-banners', params)
+}
+
+export const createNewProductBanner = (data: Partial<NewProductBanner>) => {
+  return post<NewProductBanner>('/api/v1/admin/new-product-banners', data)
+}
+
+export const updateNewProductBanner = (id: number, data: Partial<NewProductBanner>) => {
+  return put<NewProductBanner>(`/api/v1/admin/new-product-banners/${id}`, data)
+}
+
+export const deleteNewProductBanner = (id: number) => {
+  return del(`/api/v1/admin/new-product-banners/${id}`)
+}

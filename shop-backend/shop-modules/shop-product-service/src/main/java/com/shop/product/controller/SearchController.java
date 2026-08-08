@@ -49,6 +49,15 @@ public class SearchController {
         return Result.success(searchService.getSuggestions(keyword, limit));
     }
 
+    @Operation(summary = "全文搜索商品")
+    @GetMapping("/products")
+    public Result<Map<String, Object>> searchProducts(
+            @RequestParam String keyword,
+            @RequestParam(defaultValue = "1") Integer pageNum,
+            @RequestParam(defaultValue = "10") Integer pageSize) {
+        return Result.success(searchService.searchProducts(keyword, pageNum, pageSize));
+    }
+
     private Long getCurrentUserId() {
         var auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth != null && auth.getPrincipal() instanceof Long userId) {

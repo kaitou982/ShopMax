@@ -1,9 +1,7 @@
 package com.shop.admin.controller;
 
 import com.shop.admin.service.RefundAdminService;
-import com.shop.common.web.PageResult;
 import com.shop.common.web.Result;
-import com.shop.payment.entity.RefundRecord;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -13,10 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Map;
 
 /**
- * 退款审核控制器
- *
- * @author shop
- * @since 2026-06-01
+ * 退款审核控制器（已解耦：通过 Feign 调用 payment-service）
  */
 @Tag(name = "退款审核")
 @RestController
@@ -29,7 +24,7 @@ public class RefundAdminController {
 
     @Operation(summary = "分页查询退款记录")
     @GetMapping
-    public Result<PageResult<RefundRecord>> page(
+    public Result<Map<String, Object>> page(
             @RequestParam(defaultValue = "1") Integer pageNum,
             @RequestParam(defaultValue = "10") Integer pageSize,
             @RequestParam(required = false) Integer status) {
@@ -38,7 +33,7 @@ public class RefundAdminController {
 
     @Operation(summary = "根据订单号查询退款记录")
     @GetMapping("/order/{orderNo}")
-    public Result<RefundRecord> getByOrderNo(@PathVariable String orderNo) {
+    public Result<Object> getByOrderNo(@PathVariable String orderNo) {
         return Result.success(refundAdminService.getByOrderNo(orderNo));
     }
 
@@ -58,7 +53,7 @@ public class RefundAdminController {
         return Result.success(refundAdminService.reject(refundNo, reason));
     }
 
-    @Operation(summary = "手动标记退款成功（用于旧订单支付网关不可用的情况）")
+    @Operation(summary = "手动标记退款成功")
     @PostMapping("/{refundNo}/manual-approve")
     @PreAuthorize("hasRole('ADMIN')")
     public Result<Map<String, Object>> manualApprove(@PathVariable String refundNo,

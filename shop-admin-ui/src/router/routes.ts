@@ -34,6 +34,12 @@ export const routes: RouteRecordRaw[] = [
         meta: { title: '商品管理', icon: 'GoodsFilled', roles: ['ADMIN', 'STORE'] }
       },
       {
+        path: '/product/new-product',
+        name: 'NewProduct',
+        component: () => import('@/views/product/new-product/index.vue'),
+        meta: { title: '新品管理', icon: 'GoodsFilled', roles: ['ADMIN'] }
+      },
+      {
         path: '/order',
         name: 'Order',
         component: () => import('@/views/order/index.vue'),

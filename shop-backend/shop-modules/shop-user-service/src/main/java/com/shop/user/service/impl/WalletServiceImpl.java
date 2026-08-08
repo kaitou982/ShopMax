@@ -2,6 +2,7 @@ package com.shop.user.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.shop.common.enums.MemberLevelConstants;
 import com.shop.common.exception.BusinessException;
 import com.shop.common.web.PageResult;
 import com.shop.user.entity.BalanceLog;
@@ -18,7 +19,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.Collections;
 
 @Slf4j
 @Service
@@ -29,16 +29,14 @@ public class WalletServiceImpl implements WalletService {
     private final IntegralLogMapper integralLogMapper;
     private final BalanceLogMapper balanceLogMapper;
 
-    private static final int[] LEVEL_THRESHOLDS = {0, 500, 2000, 10000}; // 普通/银卡/金卡/钻石
-    private static final double[] LEVEL_DISCOUNTS = {1.0, 0.98, 0.95, 0.90};
-
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void changeIntegral(Long userId, int amount, int type, String bizId, String remark) {
         User user = userMapper.selectById(userId);
         if (user == null) throw new BusinessException("用户不存在");
 
-        int newVal = user.getIntegral() + amount;
+        int current = user.getIntegral() != null ? user.getIntegral() : 0;
+        int newVal = current + amount;
         if (newVal < 0) throw new BusinessException("积分不足");
 
         IntegralLog ilog = new IntegralLog();
@@ -62,7 +60,8 @@ public class WalletServiceImpl implements WalletService {
         User user = userMapper.selectById(userId);
         if (user == null) throw new BusinessException("用户不存在");
 
-        BigDecimal newVal = user.getBalance().add(amount);
+        BigDecimal current = user.getBalance() != null ? user.getBalance() : BigDecimal.ZERO;
+        BigDecimal newVal = current.add(amount);
         if (newVal.compareTo(BigDecimal.ZERO) < 0) throw new BusinessException("余额不足");
 
         BalanceLog blog = new BalanceLog();
@@ -87,16 +86,10 @@ public class WalletServiceImpl implements WalletService {
         User user = userMapper.selectById(userId);
         if (user == null) throw new BusinessException("用户不存在");
 
-        int newGrowth = user.getGrowthValue() + growth;
-        int oldLevel = user.getMemberLevel();
-        int newLevel = oldLevel;
-
-        for (int i = LEVEL_THRESHOLDS.length - 1; i >= 0; i--) {
-            if (newGrowth >= LEVEL_THRESHOLDS[i]) {
-                newLevel = i + 1;
-                break;
-            }
-        }
+        int currentGrowth = user.getGrowthValue() != null ? user.getGrowthValue() : 0;
+        int oldLevel = user.getMemberLevel() != null ? user.getMemberLevel() : 1;
+        int newGrowth = currentGrowth + growth;
+        int newLevel = MemberLevelConstants.calcLevel(newGrowth);
 
         user.setGrowthValue(newGrowth);
         user.setMemberLevel(newLevel);

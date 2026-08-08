@@ -23,19 +23,19 @@ public class ProductDocument {
     @Id
     private Long id;
 
-    @Field(type = FieldType.Text, analyzer = "ik_max_word", searchAnalyzer = "ik_smart")
+    @Field(type = FieldType.Text, analyzer = "standard")
     private String name;
 
     @Field(type = FieldType.Keyword)
     private String categoryId;
 
-    @Field(type = FieldType.Text, analyzer = "ik_max_word", searchAnalyzer = "ik_smart")
+    @Field(type = FieldType.Text, analyzer = "standard")
     private String categoryName;
 
     @Field(type = FieldType.Keyword)
     private String brandId;
 
-    @Field(type = FieldType.Text, analyzer = "ik_max_word", searchAnalyzer = "ik_smart")
+    @Field(type = FieldType.Text, analyzer = "standard")
     private String brandName;
 
     @Field(type = FieldType.Double)
@@ -53,7 +53,7 @@ public class ProductDocument {
     @Field(type = FieldType.Keyword)
     private String mainImage;
 
-    @Field(type = FieldType.Text, analyzer = "ik_max_word", searchAnalyzer = "ik_smart")
+    @Field(type = FieldType.Text, analyzer = "standard")
     private String description;
 
     @Field(type = FieldType.Integer)

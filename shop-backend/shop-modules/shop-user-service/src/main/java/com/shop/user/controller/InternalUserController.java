@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -61,5 +62,44 @@ public class InternalUserController {
         Integer amount = (Integer) request.get("amount");
         userService.addGrowthValue(id, amount);
         return Result.success();
+    }
+
+    @PostMapping("/{id}/refund-balance")
+    public Result<Void> refundBalance(@PathVariable Long id, @RequestBody Map<String, Object> request) {
+        BigDecimal amount = new BigDecimal(request.get("amount").toString());
+        String description = (String) request.get("description");
+        String bizId = (String) request.get("bizId");
+        userService.refundBalance(id, amount, description, bizId);
+        return Result.success();
+    }
+
+    @GetMapping("/register-stats")
+    public Result<Map<String, Object>> getRegisterStats() {
+        Map<String, Object> stats = userService.getRegisterStats();
+        return Result.success(stats);
+    }
+
+    @GetMapping("/{id}/integral")
+    public Result<Integer> getIntegral(@PathVariable Long id) {
+        Integer integral = userService.getIntegral(id);
+        return Result.success(integral);
+    }
+
+    @GetMapping("/{id}/basic-info")
+    public Result<Map<String, Object>> getUserBasicInfo(@PathVariable Long id) {
+        Map<String, Object> info = userService.getUserBasicInfo(id);
+        return Result.success(info);
+    }
+
+    @GetMapping("/batch-basic-info")
+    public Result<Map<String, Object>> getBatchBasicInfo(@RequestParam("ids") List<Long> ids) {
+        Map<String, Object> info = userService.getBatchBasicInfo(ids);
+        return Result.success(info);
+    }
+
+    @GetMapping("/{id}/following")
+    public Result<List<Long>> getFollowingUserIds(@PathVariable Long id) {
+        List<Long> ids = userService.getFollowingUserIds(id);
+        return Result.success(ids);
     }
 }

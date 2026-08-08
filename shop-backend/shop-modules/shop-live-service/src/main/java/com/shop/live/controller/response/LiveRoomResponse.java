@@ -1,5 +1,7 @@
 package com.shop.live.controller.response;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
@@ -9,7 +11,10 @@ import java.time.LocalDateTime;
 @Schema(description = "直播间响应")
 public class LiveRoomResponse {
 
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long id;
+
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long anchorId;
     private String title;
     private String cover;

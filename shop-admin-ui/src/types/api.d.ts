@@ -83,3 +83,15 @@ export interface LoginResponse {
   storeName?: string
   lastLoginTime: string
 }
+
+// 通知相关
+export interface NotificationInfo {
+  id: number
+  type: number
+  title: string
+  content: string
+  refId?: number
+  refType?: string
+  isRead: number
+  createTime: string
+}

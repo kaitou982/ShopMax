@@ -1,0 +1,6 @@
+{
+  "framework": "vite",
+  "buildCommand": "cd ../.. && pnpm install --frozen-lockfile && npx pnpm --filter @shop/mobile build:h5",
+  "outputDirectory": "dist/build/h5",
+  "installCommand": "pnpm install --frozen-lockfile"
+}

@@ -12,6 +12,8 @@ public interface NotificationService extends IService<Notification> {
 
     void markRead(Long id);
 
+    void markUnread(Long id);
+
     void markAllRead();
 
     void createNotification(Integer type, String title, String content, Long refId, String refType);

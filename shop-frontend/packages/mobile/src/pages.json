@@ -34,7 +34,12 @@
     { "path": "pages/product/reviews", "style": { "navigationBarTitleText": "商品评价" } },
     { "path": "pages/customer-service/chat", "style": { "navigationBarTitleText": "在线客服" } },
     { "path": "pages/seckill/index", "style": { "navigationBarTitleText": "限时秒杀" } },
-    { "path": "pages/user/favorites", "style": { "navigationBarTitleText": "我的收藏" } }
+    { "path": "pages/new-product/index", "style": { "navigationBarTitleText": "新品首发", "navigationStyle": "custom" } },
+    { "path": "pages/user/favorites", "style": { "navigationBarTitleText": "我的收藏" } },
+    { "path": "pages/member/index", "style": { "navigationBarTitleText": "会员中心", "navigationStyle": "custom" } },
+    { "path": "pages/member/integral-log", "style": { "navigationBarTitleText": "积分明细" } },
+    { "path": "pages/member/balance-log", "style": { "navigationBarTitleText": "余额明细" } },
+    { "path": "pages/member/recharge", "style": { "navigationBarTitleText": "余额充值" } }
   ],
   "globalStyle": {
     "navigationBarTextStyle": "black",

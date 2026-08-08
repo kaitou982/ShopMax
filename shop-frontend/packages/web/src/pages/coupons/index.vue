@@ -2,9 +2,11 @@
 defineOptions({ name: 'CouponCenterPage' })
 
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useMessage } from 'naive-ui'
 import { couponApi, type Coupon } from '@shop/shared'
 
+const router = useRouter()
 const message = useMessage()
 
 const coupons = ref<Coupon[]>([])
@@ -53,6 +55,7 @@ const isFinished = (c: Coupon) => c.receivedCount >= c.totalCount
 
 <template>
   <div class="cc-page">
+    <button class="back-btn" @click="router.back()">← 返回</button>
     <h2>领券中心</h2>
 
     <div v-if="loading" class="cc-loading">加载中...</div>
@@ -89,6 +92,7 @@ const isFinished = (c: Coupon) => c.receivedCount >= c.totalCount
 </template>
 
 <style scoped lang="scss">
+.back-btn { display: inline-block; padding: 6px 14px; border: 1px solid #ddd; border-radius: 6px; background: #fff; font-size: 13px; cursor: pointer; margin-bottom: 12px; color: #666; &:hover { border-color: $brand-orange; color: $brand-orange; } }
 .cc-page { max-width: 900px; }
 
 h2 { margin-bottom: $spacing-xl; }

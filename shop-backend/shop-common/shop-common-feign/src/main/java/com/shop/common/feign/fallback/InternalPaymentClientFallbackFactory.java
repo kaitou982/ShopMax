@@ -6,6 +6,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.openfeign.FallbackFactory;
 import org.springframework.stereotype.Component;
 
+import java.util.Map;
+
 @Slf4j
 @Component
 public class InternalPaymentClientFallbackFactory implements FallbackFactory<InternalPaymentClient> {
@@ -15,6 +17,10 @@ public class InternalPaymentClientFallbackFactory implements FallbackFactory<Int
         return new InternalPaymentClient() {
             @Override
             public Result<String> getPaymentNoByOrderId(Long orderId) {
+                return Result.error(503, "支付服务暂时不可用");
+            }
+            @Override
+            public Result<Void> updatePaymentStatusByOrderNo(Map<String, Object> request) {
                 return Result.error(503, "支付服务暂时不可用");
             }
         };

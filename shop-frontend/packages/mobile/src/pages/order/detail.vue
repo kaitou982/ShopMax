@@ -28,6 +28,8 @@ async function loadDetail(id: number) {
   try {
     loading.value = true
     order.value = await orderApi.getDetail(id)
+  } catch {
+    uni.showToast({ title: '加载订单失败', icon: 'none' })
   } finally {
     loading.value = false
   }

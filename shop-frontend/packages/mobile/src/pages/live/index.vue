@@ -7,7 +7,7 @@ const loading = ref(true)
 onMounted(async () => {
   try { rooms.value = await liveRoomApi.getRoomList() } catch { /* optional data */ } finally { loading.value = false }
 })
-const goRoom = (id: number) => uni.navigateTo({ url: `/pages/live/room?id=${id}` })
+const goRoom = (id: string | number) => uni.navigateTo({ url: `/pages/live/room?id=${id}` })
 </script>
 <template>
   <view class="lv-page">

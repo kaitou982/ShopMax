@@ -6,7 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.openfeign.FallbackFactory;
 import org.springframework.stereotype.Component;
 
-import java.math.BigDecimal;
+import java.util.List;
 import java.util.Map;
 
 @Slf4j
@@ -38,6 +38,30 @@ public class InternalUserClientFallbackFactory implements FallbackFactory<Intern
             }
             @Override
             public Result<Void> addGrowthValue(Long id, Map<String, Object> request) {
+                return Result.error(503, "用户服务暂时不可用");
+            }
+            @Override
+            public Result<Void> refundBalance(Long id, Map<String, Object> request) {
+                return Result.error(503, "用户服务暂时不可用");
+            }
+            @Override
+            public Result<Map<String, Object>> getRegisterStats() {
+                return Result.error(503, "用户服务暂时不可用");
+            }
+            @Override
+            public Result<Integer> getIntegral(Long id) {
+                return Result.error(503, "用户服务暂时不可用");
+            }
+            @Override
+            public Result<Map<String, Object>> getUserBasicInfo(Long id) {
+                return Result.error(503, "用户服务暂时不可用");
+            }
+            @Override
+            public Result<List<Long>> getFollowingUserIds(Long id) {
+                return Result.error(503, "用户服务暂时不可用");
+            }
+            @Override
+            public Result<Map<String, Object>> getBatchBasicInfo(List<Long> ids) {
                 return Result.error(503, "用户服务暂时不可用");
             }
         };

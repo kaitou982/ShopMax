@@ -5,7 +5,7 @@ import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/modules/user'
 import { getDashboardStats, getSalesTrend, getRecentOrders, type DashboardStats, type SalesTrendItem, type RecentOrder } from '@/api/modules/dashboard'
-import * as echarts from 'echarts'
+import echarts from '@/utils/echarts'
 
 const router = useRouter()
 const userStore = useUserStore()

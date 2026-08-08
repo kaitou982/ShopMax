@@ -30,4 +30,13 @@ public interface SeckillService extends IService<SeckillSession> {
 
     /** 将秒杀商品库存加载到Redis */
     void loadStockToRedis(Long sessionId);
+
+    /** 同步秒杀库存到数据库 */
+    void syncStockToDb();
+
+    /** 处理秒杀消息 */
+    void processSeckillMessages();
+
+    /** 处理秒杀超时订单 */
+    void processTimeoutOrders();
 }

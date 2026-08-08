@@ -23,7 +23,11 @@ const userStore = useUserStore()
 const cartStore = useCartStore()
 const message = useMessage()
 
-const roomId = Number(route.params.id)
+// 直接使用字符串类型的 ID，避免精度丢失
+const roomId = computed(() => {
+  const id = route.params.id as string
+  return id || ''
+})
 const room = ref<LiveRoom | null>(null)
 const products = ref<LiveProduct[]>([])
 const currentProduct = ref<LiveProduct | null>(null)
@@ -46,19 +50,24 @@ const {
 // 拉流地址
 const LIVE_BASE = import.meta.env.VITE_LIVE_URL || 'http://localhost:8085'
 const flvUrl = computed(() => {
-  if (!room.value) return ''
-  return `${LIVE_BASE}/live/${roomId}.flv`
+  if (!room.value || !roomId.value) return ''
+  const url = `${LIVE_BASE}/live/${roomId.value}.flv`
+  console.log('[Live] flvUrl:', url)
+  return url
 })
 
 const hlsUrl = computed(() => {
-  if (!room.value) return ''
-  return `${LIVE_BASE}/live/${roomId}.m3u8`
+  if (!room.value || !roomId.value) return ''
+  const url = `${LIVE_BASE}/live/${roomId.value}.m3u8`
+  console.log('[Live] hlsUrl:', url)
+  return url
 })
 
 // 加载直播间信息
 const loadRoom = async () => {
+  if (!roomId.value || roomId.value === '0') return
   try {
-    room.value = await liveRoomApi.getRoomDetail(roomId)
+    room.value = await liveRoomApi.getRoomDetail(roomId.value)
   } catch (e) {
     console.error('加载直播间失败:', e)
   }
@@ -66,8 +75,9 @@ const loadRoom = async () => {
 
 // 加载直播间商品
 const loadProducts = async () => {
+  if (!roomId.value || roomId.value === '0') return
   try {
-    products.value = await liveRoomApi.getRoomProducts(roomId)
+    products.value = await liveRoomApi.getRoomProducts(roomId.value)
     // 找到讲解中的商品
     const explaining = products.value.find(p => p.status === 2)
     if (explaining) {
@@ -112,7 +122,7 @@ const handleSendGift = (giftId: number, count: number) => {
 
 // 购买商品
 const handleBuy = (product: LiveProduct) => {
-  router.push(`/order/confirm?productId=${product.productId}&skuId=${product.skuId}&liveRoomId=${roomId}`)
+  router.push(`/order/confirm?productId=${product.productId}&skuId=${product.skuId}&liveRoomId=${roomId.value}`)
 }
 
 // 加入购物车
@@ -243,7 +253,7 @@ onMounted(() => {
 .live-room {
   position: relative;
   width: 100%;
-  height: 100vh;
+  height: 90vh;
   background: #000;
   overflow: hidden;
 

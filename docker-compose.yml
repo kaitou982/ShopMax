@@ -16,9 +16,19 @@ services:
       NACOS_AUTH_TOKEN: "U2hvcE1heC1OYWNvcy1BdXRoLVRva2VuLTIwMjYtRm9yLURldmVsb3BtZW50"
       NACOS_AUTH_IDENTITY_KEY: "serverIdentity"
       NACOS_AUTH_IDENTITY_VALUE: "shopmax-security"
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
     volumes:
       - ./data/nacos/logs:/home/nacos/logs
       - ./data/nacos/data:/home/nacos/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8848/nacos/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
     networks:
       - shopmax-net
     restart: unless-stopped
@@ -32,9 +42,19 @@ services:
     environment:
       MINIO_ROOT_USER: minioadmin
       MINIO_ROOT_PASSWORD: minioadmin123
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
     volumes:
       - ./data/minio:/data
     command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - shopmax-net
     restart: unless-stopped
@@ -46,12 +66,22 @@ services:
       - "1935:1935"   # RTMP 推流端口
       - "8085:8080"   # HTTP-FLV/HLS 输出端口
       - "1985:1985"   # SRS HTTP API 端口
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
     volumes:
       - ./docker/srs/conf:/usr/local/srs/conf
       - ./docker/srs/data:/usr/local/srs/data
       - ./docker/srs/record:/usr/local/srs/record
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:1985/api/v1/summaries"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - shopmax-net
     restart: unless-stopped
@@ -63,6 +93,308 @@ services:
       - "8858:8858"
     environment:
       JAVA_OPT: "-Dserver.port=8858 -Dcsp.sentinel.dashboard.server=localhost:8858"
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.25'
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8858/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    networks:
+      - shopmax-net
+    restart: unless-stopped
+
+  # ==================== MySQL ====================
+  shopmax-mysql:
+    image: mysql:8.0
+    container_name: shopmax-mysql
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-aptx4869}
+      MYSQL_DATABASE: shopmax
+      MYSQL_CHARACTER_SET_SERVER: utf8mb4
+      MYSQL_COLLATION_SERVER: utf8mb4_unicode_ci
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '1.0'
+    volumes:
+      - ./data/mysql:/var/lib/mysql
+      - ./docs/sql:/docker-entrypoint-initdb.d
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - shopmax-net
+    restart: unless-stopped
+
+  # ==================== Redis ====================
+  shopmax-redis:
+    image: redis:7-alpine
+    container_name: shopmax-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.5'
+    volumes:
+      - ./data/redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - shopmax-net
+    restart: unless-stopped
+
+  # ==================== Elasticsearch ====================
+  shopmax-elasticsearch:
+    image: elasticsearch:8.13.0
+    container_name: shopmax-elasticsearch
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms256m -Xmx256m
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '1.0'
+    volumes:
+      - ./data/elasticsearch:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+    networks:
+      - shopmax-net
+    restart: unless-stopped
+
+  # ==================== Logstash ====================
+  shopmax-logstash:
+    image: logstash:8.13.0
+    container_name: shopmax-logstash
+    ports:
+      - "5044:5044"
+      - "9600:9600"
+    volumes:
+      - ./docker/logstash/pipeline:/usr/share/logstash/pipeline
+    environment:
+      - LS_JAVA_OPTS=-Xms128m -Xmx128m
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+    depends_on:
+      shopmax-elasticsearch:
+        condition: service_healthy
+    networks:
+      - shopmax-net
+    restart: unless-stopped
+
+  # ==================== Kibana ====================
+  shopmax-kibana:
+    image: kibana:8.13.0
+    container_name: shopmax-kibana
+    ports:
+      - "5601:5601"
+    environment:
+      - ELASTICSEARCH_HOSTS=http://shopmax-elasticsearch:9200
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+    depends_on:
+      shopmax-elasticsearch:
+        condition: service_healthy
+    networks:
+      - shopmax-net
+    restart: unless-stopped
+
+  # ==================== XXL-JOB Admin ====================
+  shopmax-xxljob:
+    image: xuxueli/xxl-job-admin:2.4.1
+    container_name: shopmax-xxljob
+    ports:
+      - "8095:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://host.docker.internal:3306/xxl_job?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-aptx4869}
+      XXL_JOB_LOGIN_USERNAME: admin
+      XXL_JOB_LOGIN_PASSWORD: 123456
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./data/xxl-job:/data/applogs
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    networks:
+      - shopmax-net
+    restart: unless-stopped
+
+  # ==================== RocketMQ NameServer ====================
+  shopmax-rocketmq-namesrv:
+    image: apache/rocketmq:5.1.4
+    container_name: shopmax-rocketmq-namesrv
+    ports:
+      - "9876:9876"
+    command: sh mqnamesrv
+    environment:
+      JAVA_OPT_EXT: "-Xms128m -Xmx128m"
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+    volumes:
+      - ./data/rocketmq/namesrv/logs:/home/rocketmq/logs
+    healthcheck:
+      test: ["CMD-SHELL", "ls /home/rocketmq/logs/*.log 2>/dev/null | head -1 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - shopmax-net
+    restart: unless-stopped
+
+  # ==================== RocketMQ Broker ====================
+  shopmax-rocketmq-broker:
+    image: apache/rocketmq:5.1.4
+    container_name: shopmax-rocketmq-broker
+    ports:
+      - "10911:10911"
+      - "10909:10909"
+    command: sh mqbroker -n shopmax-rocketmq-namesrv:9876
+    environment:
+      JAVA_OPT_EXT: "-Xms256m -Xmx256m"
+      NAMESRV_ADDR: "shopmax-rocketmq-namesrv:9876"
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+    volumes:
+      - ./data/rocketmq/broker/logs:/home/rocketmq/logs
+      - ./data/rocketmq/broker/store:/home/rocketmq/store
+    depends_on:
+      shopmax-rocketmq-namesrv:
+        condition: service_healthy
+    networks:
+      - shopmax-net
+    restart: unless-stopped
+
+  # ==================== RocketMQ Console ====================
+  shopmax-rocketmq-console:
+    image: apacherocketmq/rocketmq-dashboard:1.0.0
+    container_name: shopmax-rocketmq-console
+    ports:
+      - "18080:8080"
+    environment:
+      NAMESRV_ADDR: "shopmax-rocketmq-namesrv:9876"
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.25'
+    depends_on:
+      shopmax-rocketmq-namesrv:
+        condition: service_healthy
+    networks:
+      - shopmax-net
+    restart: unless-stopped
+
+  # ==================== Seata Server ====================
+  shopmax-seata:
+    image: seataio/seata-server:1.7.1
+    container_name: shopmax-seata
+    ports:
+      - "8093:8091"
+      - "7091:7091"
+    environment:
+      SEATA_PORT: 8091
+      STORE_MODE: file
+      SERVER_ADDR: host.docker.internal:8848
+      NACOS_USERNAME: nacos
+      NACOS_PASSWORD: nacos
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./data/seata:/seata-server/logs
+    depends_on:
+      nacos:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7091/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    networks:
+      - shopmax-net
+    restart: unless-stopped
+
+  # ==================== SonarQube ====================
+  shopmax-sonarqube:
+    image: sonarqube:community
+    container_name: shopmax-sonarqube
+    ports:
+      - "9002:9000"
+    environment:
+      SONAR_ES_BOOTSTRAP_CHECKS_DISABLE: "true"
+      SONAR_JAVA_OPTS: "-Xmx512m -Xms256m"
+    deploy:
+      resources:
+        limits:
+          memory: 768M
+          cpus: '1.0'
+    ulimits:
+      nofile:
+        soft: 131072
+        hard: 131072
+      nproc:
+        soft: 8192
+        hard: 8192
+    volumes:
+      - ./data/sonarqube/data:/opt/sonarqube/data
+      - ./data/sonarqube/logs:/opt/sonarqube/logs
+      - ./data/sonarqube/extensions:/opt/sonarqube/extensions
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/api/system/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 15
+      start_period: 120s
     networks:
       - shopmax-net
     restart: unless-stopped

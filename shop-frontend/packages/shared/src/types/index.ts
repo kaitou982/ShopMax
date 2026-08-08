@@ -49,6 +49,28 @@ export interface LoginForm { username: string; password: string }
 export interface PhoneLoginForm { phone: string; verifyCode: string }
 export interface EmailLoginForm { email: string; verifyCode: string }
 export interface WxLoginForm { openid: string; unionid?: string; nickname?: string; avatar?: string }
+
+// ── 会员/钱包相关 ──────────────────────────────
+export interface LevelBenefit {
+  level: number; name: string; discount: string; threshold: number
+}
+
+export interface MemberInfo {
+  memberLevel: number; memberLevelName: string
+  integral: number; balance: number; growthValue: number
+  nextLevelGrowth: number; nextLevelName: string
+  levelBenefits: LevelBenefit[]
+}
+
+export interface IntegralLog {
+  id: number; userId: number; changeAmount: number; afterAmount: number
+  type: number; bizId: string; remark: string; createTime: string
+}
+
+export interface BalanceLog {
+  id: number; userId: number; changeAmount: number; afterAmount: number
+  type: number; bizId: string; payChannel: string; remark: string; createTime: string
+}
 export interface RegisterForm { phone?: string; email?: string; password: string; verifyCode: string; username?: string; nickname?: string }
 export interface SendEmailCodeForm { email: string; type: string }
 export interface UpdateUserForm { nickname?: string; avatar?: string; gender?: number; birthday?: string; email?: string }
@@ -95,7 +117,8 @@ export interface OrderItem {
 
 export interface CreateOrderParams {
   totalAmount: number; payAmount: number; freightAmount: number
-  couponAmount?: number; integralAmount?: number; userCouponId?: number; userCouponId2?: number
+  couponAmount?: number; integralAmount?: number; useIntegral?: number
+  userCouponId?: number; userCouponId2?: number
   receiverName: string; receiverPhone: string; receiverAddress: string
   remark?: string; sourceType: number
   items: OrderItem[]
@@ -199,6 +222,20 @@ export interface LiveMessage {
 export interface Banner {
   id: number; title: string; imageUrl: string; linkUrl: string
   sort: number; status: number
+}
+
+// ── 新品首发相关 ────────────────────────────────────
+export interface NewProductBanner {
+  id: number; title: string; imageUrl: string
+  productId: number | null; linkUrl: string | null
+  sort: number; status: number
+  startTime: string | null; endTime: string | null
+  createTime: string
+}
+
+export interface NewProductPageParams extends PageParams {
+  categoryId?: number
+  sortBy?: 'newest' | 'sort' | 'price_asc' | 'price_desc'
 }
 
 // ── 营销相关 ────────────────────────────────────

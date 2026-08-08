@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.openfeign.FallbackFactory;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.Map;
 
 @Slf4j
@@ -21,6 +22,22 @@ public class InternalOrderClientFallbackFactory implements FallbackFactory<Inter
             }
             @Override
             public Result<Map<String, Object>> getOrderInfo(Long id) {
+                return Result.error(503, "订单服务暂时不可用");
+            }
+            @Override
+            public Result<Map<String, Object>> getOrderInfoByOrderNo(String orderNo) {
+                return Result.error(503, "订单服务暂时不可用");
+            }
+            @Override
+            public Result<Void> updateOrderStatusByOrderNo(Map<String, Object> request) {
+                return Result.error(503, "订单服务暂时不可用");
+            }
+            @Override
+            public Result<List<Map<String, Object>>> getOrderItems(Long id) {
+                return Result.error(503, "订单服务暂时不可用");
+            }
+            @Override
+            public Result<Map<String, Object>> getDashboardStats() {
                 return Result.error(503, "订单服务暂时不可用");
             }
         };

@@ -19,7 +19,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -261,6 +263,46 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         return result;
     }
 
+    @Override
+    public PageResult<Product> pageNew(Integer pageNum, Integer pageSize, Long categoryId, String sortBy) {
+        pageSize = Math.min(pageSize, MAX_PAGE_SIZE);
+        Page<Product> page = new Page<>(pageNum, pageSize);
+        LambdaQueryWrapper<Product> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Product::getDeleted, 0);
+        wrapper.eq(Product::getStatus, 1);
+        wrapper.eq(Product::getIsNew, 1);
+
+        // 时间过滤：start_time <= NOW() AND end_time >= NOW()
+        LocalDateTime now = LocalDateTime.now();
+        wrapper.and(w -> w
+                .isNull(Product::getNewProductStartTime)
+                .or().le(Product::getNewProductStartTime, now)
+        );
+        wrapper.and(w -> w
+                .isNull(Product::getNewProductEndTime)
+                .or().ge(Product::getNewProductEndTime, now)
+        );
+
+        if (categoryId != null) {
+            wrapper.eq(Product::getCategoryId, categoryId);
+        }
+
+        // 排序
+        if (sortBy != null) {
+            switch (sortBy) {
+                case "sort" -> wrapper.orderByDesc(Product::getNewProductSort);
+                case "price_asc" -> wrapper.orderByAsc(Product::getSalePrice);
+                case "price_desc" -> wrapper.orderByDesc(Product::getSalePrice);
+                default -> wrapper.orderByDesc(Product::getCreateTime);
+            }
+        } else {
+            wrapper.orderByDesc(Product::getNewProductSort, Product::getCreateTime);
+        }
+
+        Page<Product> result = baseMapper.selectPage(page, wrapper);
+        return PageResult.of(result.getRecords(), result.getTotal(), result.getPages());
+    }
+
     private String buildListCacheKey(String prefix, Integer limit) {
         if (isStoreUser()) {
             return prefix + "store:" + getCurrentUserId() + ":" + limit;
@@ -307,8 +349,8 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
 
     private void evictProductListCache() {
         try {
-            redisUtil.delete(CACHE_PRODUCT_RECOMMEND);
-            redisUtil.delete(CACHE_PRODUCT_NEW);
+            redisUtil.deleteByPattern(CACHE_PRODUCT_RECOMMEND + "*");
+            redisUtil.deleteByPattern(CACHE_PRODUCT_NEW + "*");
         } catch (Exception e) {
             log.warn("Redis删除商品列表缓存失败", e);
         }
@@ -343,5 +385,124 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
             Long userId = getCurrentUserId();
             wrapper.eq(Product::getCreateUserId, userId);
         }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void deductStock(Long productId, Integer quantity) {
+        if (quantity == null || quantity <= 0) {
+            throw new BusinessException("扣减数量必须大于0");
+        }
+        int affected = baseMapper.decreaseStock(productId, quantity);
+        if (affected == 0) {
+            throw new BusinessException("商品库存不足");
+        }
+        evictProductCache(productId);
+        log.info("扣减库存成功: productId={}, quantity={}", productId, quantity);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void restoreStock(Long productId, Integer quantity) {
+        if (quantity == null || quantity <= 0) {
+            throw new BusinessException("恢复数量必须大于0");
+        }
+        LambdaUpdateWrapper<Product> wrapper = new LambdaUpdateWrapper<>();
+        wrapper.eq(Product::getId, productId)
+               .eq(Product::getDeleted, 0)
+               .setSql("stock = stock + " + quantity);
+        baseMapper.update(null, wrapper);
+        evictProductCache(productId);
+        log.info("恢复库存成功: productId={}, quantity={}", productId, quantity);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void addSales(Long productId, Integer quantity) {
+        if (quantity == null || quantity <= 0) {
+            throw new BusinessException("增加销量数量必须大于0");
+        }
+        int affected = baseMapper.increaseSales(productId, quantity);
+        if (affected == 0) {
+            throw new BusinessException("商品不存在");
+        }
+        evictProductCache(productId);
+        log.info("增加销量成功: productId={}, quantity={}", productId, quantity);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void batchRestoreStock(List<Map<String, Object>> items) {
+        for (Map<String, Object> item : items) {
+            Long productId = ((Number) item.get("product_id")).longValue();
+            int quantity = ((Number) item.get("quantity")).intValue();
+            restoreStock(productId, quantity);
+        }
+    }
+
+    @Override
+    public Map<String, Object> getNewProductPage(int pageNum, int pageSize, Long categoryId) {
+        int offset = (pageNum - 1) * pageSize;
+        List<Map<String, Object>> records;
+        int total;
+        if (categoryId != null) {
+            records = baseMapper.selectNewProductPageByCategory(categoryId, offset, pageSize);
+            total = baseMapper.countNewProductsByCategory(categoryId);
+        } else {
+            records = baseMapper.selectNewProductPage(offset, pageSize);
+            total = baseMapper.countNewProducts();
+        }
+        Map<String, Object> result = new java.util.HashMap<>();
+        result.put("records", records);
+        result.put("total", total);
+        return result;
+    }
+
+    @Override
+    public Map<String, Object> getBatchProductInfo(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return java.util.Map.of();
+        }
+        var products = baseMapper.selectBatchIds(ids);
+        Map<String, Object> result = new java.util.HashMap<>();
+        for (var p : products) {
+            Map<String, Object> info = new java.util.HashMap<>();
+            info.put("name", p.getName());
+            info.put("mainImage", p.getMainImage());
+            info.put("salePrice", p.getSalePrice());
+            result.put(p.getId().toString(), info);
+        }
+        return result;
+    }
+
+    @Override
+    public Map<String, Object> getNewProductStats() {
+        Map<String, Object> stats = new java.util.HashMap<>();
+        stats.put("total", baseMapper.countNewProducts());
+        stats.put("active", baseMapper.countActiveNewProducts());
+        stats.put("expiring", baseMapper.countExpiringNewProducts());
+        stats.put("todayNew", baseMapper.countTodayNewProducts());
+        return stats;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void batchMarkNew(List<Long> ids) {
+        baseMapper.batchMarkNew(ids);
+        log.info("批量标记新品: ids={}", ids);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void batchUnmarkNew(List<Long> ids) {
+        baseMapper.batchUnmarkNew(ids);
+        log.info("批量取消新品: ids={}", ids);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void updateNewProductSettings(Long id, Integer sort, String startTime, String endTime) {
+        baseMapper.updateNewProductSettings(id, sort, startTime, endTime);
+        log.info("更新新品设置: id={}, sort={}, startTime={}, endTime={}", id, sort, startTime, endTime);
     }
 }

@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.InputStream;
+import java.util.Map;
 
 /**
  * MinIO 文件存储服务实现
@@ -38,11 +39,16 @@ public class MinioStorageService implements StorageService {
         try {
             ensureBucketExists();
 
+            String cacheControl = isImageContentType(contentType)
+                    ? "public, max-age=604800, immutable"
+                    : "public, max-age=3600";
+
             PutObjectArgs args = PutObjectArgs.builder()
                     .bucket(properties.getBucket())
                     .object(objectName)
                     .stream(stream, size, -1)
                     .contentType(contentType != null ? contentType : "application/octet-stream")
+                    .headers(Map.of("Cache-Control", cacheControl))
                     .build();
 
             minioClient.putObject(args);
@@ -89,6 +95,10 @@ public class MinioStorageService implements StorageService {
         } catch (Exception e) {
             return false;
         }
+    }
+
+    private boolean isImageContentType(String contentType) {
+        return contentType != null && contentType.startsWith("image/");
     }
 
     private void ensureBucketExists() {

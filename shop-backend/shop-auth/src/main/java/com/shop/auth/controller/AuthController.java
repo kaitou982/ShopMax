@@ -1,5 +1,6 @@
 package com.shop.auth.controller;
 
+import com.shop.common.exception.BusinessException;
 import com.shop.common.feign.client.UserServiceClient;
 import com.shop.common.feign.dto.user.*;
 import com.shop.common.redis.RedisUtil;
@@ -37,6 +38,9 @@ public class AuthController {
     private Long jwtExpiration;
 
     private static final String TOKEN_BLACKLIST_PREFIX = "token:blacklist:";
+    private static final String LOGIN_FAIL_PREFIX = "login:fail:";
+    private static final int MAX_FAIL_ATTEMPTS = 5;
+    private static final long LOCK_DURATION_MINUTES = 30;
 
     public static boolean isBlacklisted(RedisUtil redisUtil, String token) {
         return redisUtil.hasKey(TOKEN_BLACKLIST_PREFIX + token);
@@ -46,10 +50,14 @@ public class AuthController {
     @PostMapping("/login")
     public Result<UserLoginResponse> login(@Valid @RequestBody UserLoginRequest request,
                                            HttpServletRequest servletRequest) {
+        checkLoginLock(request.getUsername());
         request.setIp(getClientIp(servletRequest));
         Result<UserLoginResponse> result = userServiceClient.login(request);
         if (result.getCode() == 200) {
+            clearLoginFailures(request.getUsername());
             log.info("用户登录成功: username={}", request.getUsername());
+        } else {
+            recordLoginFailure(request.getUsername());
         }
         return result;
     }
@@ -58,10 +66,14 @@ public class AuthController {
     @PostMapping("/login/phone")
     public Result<UserLoginResponse> loginByPhone(@Valid @RequestBody PhoneLoginRequest request,
                                                   HttpServletRequest servletRequest) {
+        checkLoginLock(request.getPhone());
         request.setIp(getClientIp(servletRequest));
         Result<UserLoginResponse> result = userServiceClient.loginByPhone(request);
         if (result.getCode() == 200) {
+            clearLoginFailures(request.getPhone());
             log.info("手机号登录成功: phone={}", request.getPhone());
+        } else {
+            recordLoginFailure(request.getPhone());
         }
         return result;
     }
@@ -102,10 +114,14 @@ public class AuthController {
     @PostMapping("/login/email")
     public Result<UserLoginResponse> loginByEmail(@Valid @RequestBody EmailLoginRequest request,
                                                   HttpServletRequest servletRequest) {
+        checkLoginLock(request.getEmail());
         request.setIp(getClientIp(servletRequest));
         Result<UserLoginResponse> result = userServiceClient.loginByEmail(request);
         if (result.getCode() == 200) {
+            clearLoginFailures(request.getEmail());
             log.info("邮箱登录成功: email={}", request.getEmail());
+        } else {
+            recordLoginFailure(request.getEmail());
         }
         return result;
     }
@@ -149,10 +165,48 @@ public class AuthController {
 
     @Operation(summary = "刷新Token")
     @PostMapping("/refresh")
-    public Result<UserLoginResponse> refreshToken(@RequestAttribute("userId") Long userId) {
-        String newToken = jwtUtil.generateToken(userId);
+    public Result<UserLoginResponse> refreshToken(@RequestBody RefreshTokenRequest request) {
+        String refreshToken = request.getRefreshToken();
+
+        // 1. 验证 refreshToken 有效性
+        if (refreshToken == null || refreshToken.isEmpty()) {
+            return Result.error(400, "refreshToken不能为空");
+        }
+        if (!jwtUtil.validateToken(refreshToken)) {
+            return Result.error(401, "refreshToken无效或已过期");
+        }
+
+        // 2. 验证是否是 refreshToken（不是 access token）
+        if (!jwtUtil.isRefreshToken(refreshToken)) {
+            return Result.error(400, "传入的不是refreshToken");
+        }
+
+        // 3. 检查 refreshToken 是否在黑名单中
+        if (isBlacklisted(redisUtil, refreshToken)) {
+            return Result.error(401, "refreshToken已被注销");
+        }
+
+        // 4. 从 refreshToken 中提取用户信息
+        Long userId = jwtUtil.getUserIdFromToken(refreshToken);
+        String username = jwtUtil.getUsernameFromToken(refreshToken);
+        if (userId == null) {
+            return Result.error(401, "refreshToken中无有效用户信息");
+        }
+
+        // 5. 生成新的 access token 和 refresh token
+        String newAccessToken = jwtUtil.generateToken(userId);
+        String newRefreshToken = jwtUtil.generateRefreshToken(userId, username);
+
+        // 6. 将旧的 refresh token 加入黑名单
+        long remainingMs = jwtUtil.getExpirationDateFromToken(refreshToken).getTime() - System.currentTimeMillis();
+        if (remainingMs > 0) {
+            redisUtil.set(TOKEN_BLACKLIST_PREFIX + refreshToken, "1", remainingMs, TimeUnit.MILLISECONDS);
+        }
+
+        // 7. 返回新的 token 对
         UserLoginResponse response = new UserLoginResponse();
-        response.setToken(newToken);
+        response.setToken(newAccessToken);
+        response.setRefreshToken(newRefreshToken);
         log.info("Token刷新成功: userId={}", userId);
         return Result.success(response);
     }
@@ -174,6 +228,34 @@ public class AuthController {
             log.info("用户申请入驻: userId={}, storeName={}", userId, request.getStoreName());
         }
         return result;
+    }
+
+    /**
+     * 检查登录是否被锁定
+     */
+    private void checkLoginLock(String identifier) {
+        Object attempts = redisUtil.get(LOGIN_FAIL_PREFIX + identifier);
+        if (attempts != null && Integer.parseInt(attempts.toString()) >= MAX_FAIL_ATTEMPTS) {
+            throw new BusinessException("登录失败次数过多，请" + LOCK_DURATION_MINUTES + "分钟后再试");
+        }
+    }
+
+    /**
+     * 记录登录失败
+     */
+    private void recordLoginFailure(String identifier) {
+        String key = LOGIN_FAIL_PREFIX + identifier;
+        Long count = redisUtil.increment(key);
+        if (count != null && count == 1) {
+            redisUtil.expire(key, LOCK_DURATION_MINUTES, TimeUnit.MINUTES);
+        }
+    }
+
+    /**
+     * 清除登录失败记录
+     */
+    private void clearLoginFailures(String identifier) {
+        redisUtil.delete(LOGIN_FAIL_PREFIX + identifier);
     }
 
     /**

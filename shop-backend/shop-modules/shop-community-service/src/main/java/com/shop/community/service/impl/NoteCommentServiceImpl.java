@@ -9,7 +9,7 @@ import com.shop.community.controller.response.CommentResponse;
 import com.shop.community.entity.NoteComment;
 import com.shop.community.mapper.NoteCommentMapper;
 import com.shop.community.mapper.NoteMapper;
-import com.shop.community.mapper.UserInfoMapper;
+import com.shop.community.service.CommunityExternalService;
 import com.shop.community.service.NoteCommentService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -28,7 +29,7 @@ public class NoteCommentServiceImpl implements NoteCommentService {
 
     private final NoteCommentMapper noteCommentMapper;
     private final NoteMapper noteMapper;
-    private final UserInfoMapper userInfoMapper;
+    private final CommunityExternalService externalService;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -65,9 +66,15 @@ public class NoteCommentServiceImpl implements NoteCommentService {
             throw new BusinessException("无权删除此评论");
         }
 
+        // 级联删除所有子回复
+        LambdaQueryWrapper<NoteComment> childWrapper = new LambdaQueryWrapper<>();
+        childWrapper.eq(NoteComment::getParentId, commentId);
+        long childCount = noteCommentMapper.selectCount(childWrapper);
+        noteCommentMapper.delete(childWrapper);
+
         noteCommentMapper.deleteById(commentId);
-        noteMapper.updateCommentCount(comment.getNoteId(), -1);
-        log.info("删除评论: commentId={}", commentId);
+        noteMapper.updateCommentCount(comment.getNoteId(), -(int) (1 + childCount));
+        log.info("删除评论: commentId={}, 子评论数={}", commentId, childCount);
     }
 
     @Override
@@ -84,21 +91,36 @@ public class NoteCommentServiceImpl implements NoteCommentService {
                 .map(NoteComment::getId)
                 .collect(Collectors.toList());
 
+        // 收集所有需要查询的 userId
+        Set<Long> allUserIds = new java.util.HashSet<>();
+        result.getRecords().forEach(c -> {
+            allUserIds.add(c.getUserId());
+            if (c.getReplyToUserId() != null) allUserIds.add(c.getReplyToUserId());
+        });
+
         Map<Long, List<CommentResponse>> childrenMap = Map.of();
         if (!parentIds.isEmpty()) {
             LambdaQueryWrapper<NoteComment> childWrapper = new LambdaQueryWrapper<>();
             childWrapper.in(NoteComment::getParentId, parentIds);
             childWrapper.orderByAsc(NoteComment::getCreateTime);
             List<NoteComment> children = noteCommentMapper.selectList(childWrapper);
+            children.forEach(c -> {
+                allUserIds.add(c.getUserId());
+                if (c.getReplyToUserId() != null) allUserIds.add(c.getReplyToUserId());
+            });
+
+            Map<Long, CommunityExternalService.UserInfo> userInfoMap = batchLoadUsers(allUserIds);
+
             childrenMap = children.stream()
-                    .map(this::buildResponse)
+                    .map(c -> buildResponseWithCache(c, userInfoMap))
                     .collect(Collectors.groupingBy(CommentResponse::getParentId));
         }
 
+        Map<Long, CommunityExternalService.UserInfo> userInfoMap = batchLoadUsers(allUserIds);
         Map<Long, List<CommentResponse>> finalChildrenMap = childrenMap;
         List<CommentResponse> records = result.getRecords().stream()
                 .map(comment -> {
-                    CommentResponse resp = buildResponse(comment);
+                    CommentResponse resp = buildResponseWithCache(comment, userInfoMap);
                     resp.setChildren(finalChildrenMap.getOrDefault(comment.getId(), List.of()));
                     return resp;
                 })
@@ -107,7 +129,20 @@ public class NoteCommentServiceImpl implements NoteCommentService {
         return PageResult.of(records, result.getTotal(), result.getPages(), result.getCurrent(), result.getSize());
     }
 
+    private Map<Long, CommunityExternalService.UserInfo> batchLoadUsers(Set<Long> userIds) {
+        userIds.remove(null);
+        if (userIds.isEmpty()) return Map.of();
+        return externalService.batchGetUserInfo(new ArrayList<>(userIds));
+    }
+
     private CommentResponse buildResponse(NoteComment comment) {
+        Set<Long> ids = new java.util.HashSet<>();
+        ids.add(comment.getUserId());
+        if (comment.getReplyToUserId() != null) ids.add(comment.getReplyToUserId());
+        return buildResponseWithCache(comment, batchLoadUsers(ids));
+    }
+
+    private CommentResponse buildResponseWithCache(NoteComment comment, Map<Long, CommunityExternalService.UserInfo> userInfoMap) {
         CommentResponse resp = new CommentResponse();
         resp.setId(comment.getId());
         resp.setNoteId(comment.getNoteId());
@@ -118,16 +153,16 @@ public class NoteCommentServiceImpl implements NoteCommentService {
         resp.setLikeCount(comment.getLikeCount());
         resp.setCreateTime(comment.getCreateTime());
 
-        var userInfo = userInfoMapper.selectUserInfo(comment.getUserId());
+        var userInfo = userInfoMap.get(comment.getUserId());
         if (userInfo != null) {
-            resp.setUserNickname(userInfo.getNickname());
-            resp.setUserAvatar(userInfo.getAvatar());
+            resp.setUserNickname(userInfo.nickname());
+            resp.setUserAvatar(userInfo.avatar());
         }
 
         if (comment.getReplyToUserId() != null) {
-            var replyUserInfo = userInfoMapper.selectUserInfo(comment.getReplyToUserId());
+            var replyUserInfo = userInfoMap.get(comment.getReplyToUserId());
             if (replyUserInfo != null) {
-                resp.setReplyToUserNickname(replyUserInfo.getNickname());
+                resp.setReplyToUserNickname(replyUserInfo.nickname());
             }
         }
 

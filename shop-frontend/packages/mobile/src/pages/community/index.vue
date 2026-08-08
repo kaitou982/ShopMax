@@ -1,16 +1,17 @@
 <script setup lang="ts">defineOptions({ name: 'CommunityPage' })
 import { ref, onMounted } from 'vue'
 import { communityApi, type NoteResponse } from '@shop/shared'
-const notes = ref<NoteResponse[]>([]); const tab = ref<'recommend'|'following'>('recommend')
-const load = async () => { const r = await communityApi.getNoteList({pageSize:20,tab:tab.value}); notes.value = ((r as any)?.records||[]) }
+const notes = ref<NoteResponse[]>([]); const loading = ref(false); const tab = ref<'recommend'|'following'>('recommend')
+const load = async () => { loading.value = true; try { const r = await communityApi.getNoteList({pageSize:20,tab:tab.value}); notes.value = ((r as any)?.records||[]) } catch { notes.value = [] } finally { loading.value = false } }
 onMounted(load)
-const toggleLike = async (n:NoteResponse) => { try{await communityApi.toggleLike(n.id);n.isLiked=!n.isLiked;n.likeCount+=n.isLiked?1:-1}catch{} }
+const toggleLike = async (n:NoteResponse) => { try{const liked=await communityApi.toggleLike(n.id);n.isLiked=liked;n.likeCount+=liked?1:-1}catch{} }
 const goDetail = (id: number) => uni.navigateTo({ url: `/pages/community/detail?id=${id}` })
 const goPublish = () => uni.navigateTo({ url: '/pages/community/publish' })
 </script>
 <template>
   <view class="cm"><view class="cm-tabs"><text :class="{on:tab==='recommend'}" @click="tab='recommend';load()">推荐</text><text :class="{on:tab==='following'}" @click="tab='following';load()">关注</text></view>
-  <view class="cm-list"><view class="cm-card" v-for="n in notes" :key="n.id" @click="goDetail(n.id)">
+  <view v-if="loading" class="cm-loading">加载中...</view>
+  <view class="cm-list" v-else><view class="cm-card" v-for="n in notes" :key="n.id" @click="goDetail(n.id)">
     <view class="cm-hd"><image :src="n.userAvatar||'/api/v1/files/default/avatar'" class="cm-av"/><text class="cm-nn">{{n.userNickname}}</text></view>
     <image v-if="n.coverUrl||n.images?.length" :src="n.coverUrl||n.images[0]" mode="aspectFill" class="cm-cover"/>
     <view class="cm-body"><text>{{n.title||n.content?.slice(0,120)}}</text></view>

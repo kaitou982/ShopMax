@@ -12,13 +12,13 @@ const message = useMessage()
 
 const iconList = [
   { name: '限时秒杀', icon: FlashOutline, color: '#FF5000', path: '/seckill' },
-  { name: '会员中心', icon: DiamondOutline, color: '#FF8F1F' },
+  { name: '会员中心', icon: DiamondOutline, color: '#FF8F1F', path: '/member' },
   { name: '百亿补贴', icon: FlameOutline, color: '#FF3B3B' },
   { name: '社区', icon: ChatbubbleOutline, color: '#00B578', path: '/community' },
   { name: '直播', icon: VideocamOutline, color: '#409EFF', path: '/live' },
   { name: '领券中心', icon: TicketOutline, color: '#FF5000', path: '/coupons' },
-  { name: '新品首发', icon: CubeOutline, color: '#1C1C1E', path: '/search' },
-  { name: '我的收藏', icon: StarOutline, color: '#FF8F1F', path: '/user/coupons' },
+  { name: '新品首发', icon: CubeOutline, color: '#1C1C1E', path: '/new-product' },
+  { name: '我的收藏', icon: StarOutline, color: '#FF8F1F', path: '/user/favorites' },
 ]
 
 // Banner
@@ -129,7 +129,7 @@ const goCategory = (id: number) => router.push(`/category/${id}`)
 // Banner
 .banner-carousel { margin-bottom: $spacing-xl; border-radius: $radius-md; overflow: hidden; }
 .banner-slide {
-  height: 420px; border-radius: $radius-md;
+  aspect-ratio: 940 / 440; border-radius: $radius-md;
   background-size: cover; background-position: center; background-color: #f5f5f5;
   display: flex; align-items: flex-end; padding: $spacing-2xl; color: #fff; overflow: hidden;
   cursor: pointer;

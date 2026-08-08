@@ -7,6 +7,7 @@ import com.shop.community.controller.response.NoteResponse;
 import com.shop.community.entity.Note;
 import com.shop.community.entity.NoteFavorite;
 import com.shop.community.mapper.*;
+import com.shop.community.service.CommunityExternalService;
 import com.shop.community.service.NoteFavoriteService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -24,7 +26,7 @@ public class NoteFavoriteServiceImpl implements NoteFavoriteService {
     private final NoteFavoriteMapper noteFavoriteMapper;
     private final NoteMapper noteMapper;
     private final NoteImageMapper noteImageMapper;
-    private final UserInfoMapper userInfoMapper;
+    private final CommunityExternalService externalService;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -67,34 +69,55 @@ public class NoteFavoriteServiceImpl implements NoteFavoriteService {
             return PageResult.empty();
         }
 
+        // 构建 noteId → 收藏时间 映射
+        Map<Long, java.time.LocalDateTime> favoriteTimeMap = result.getRecords().stream()
+                .collect(Collectors.toMap(NoteFavorite::getNoteId, NoteFavorite::getCreateTime, (a, b) -> a));
+
+        // selectBatchIds 不保持顺序，需手动重排
         List<Note> notes = noteMapper.selectBatchIds(noteIds);
-        List<NoteResponse> records = notes.stream()
-                .map(note -> {
-                    NoteResponse resp = new NoteResponse();
-                    resp.setId(note.getId());
-                    resp.setUserId(note.getUserId());
-                    resp.setTitle(note.getTitle());
-                    resp.setCoverUrl(note.getCoverUrl());
-                    resp.setLikeCount(note.getLikeCount());
-                    resp.setCommentCount(note.getCommentCount());
-                    resp.setCreateTime(note.getCreateTime());
+        Map<Long, Note> noteMap = notes.stream()
+                .collect(Collectors.toMap(Note::getId, n -> n, (a, b) -> a));
 
-                    var userInfo = userInfoMapper.selectUserInfo(note.getUserId());
-                    if (userInfo != null) {
-                        resp.setUserNickname(userInfo.getNickname());
-                        resp.setUserAvatar(userInfo.getAvatar());
-                    }
+        // 批量获取用户信息（通过 Feign）
+        List<Long> userIds = notes.stream().map(Note::getUserId).distinct().collect(Collectors.toList());
+        Map<Long, CommunityExternalService.UserInfo> userInfoMap = externalService.batchGetUserInfo(userIds);
 
-                    LambdaQueryWrapper<com.shop.community.entity.NoteImage> imgWrapper = new LambdaQueryWrapper<>();
-                    imgWrapper.eq(com.shop.community.entity.NoteImage::getNoteId, note.getId());
-                    imgWrapper.orderByAsc(com.shop.community.entity.NoteImage::getSortOrder);
-                    resp.setImages(noteImageMapper.selectList(imgWrapper).stream()
-                            .map(com.shop.community.entity.NoteImage::getImageUrl)
-                            .collect(Collectors.toList()));
+        // 批量获取图片
+        LambdaQueryWrapper<com.shop.community.entity.NoteImage> imgWrapper = new LambdaQueryWrapper<>();
+        imgWrapper.in(com.shop.community.entity.NoteImage::getNoteId, noteIds);
+        imgWrapper.orderByAsc(com.shop.community.entity.NoteImage::getSortOrder);
+        Map<Long, List<String>> imageMap = noteImageMapper.selectList(imgWrapper).stream()
+                .collect(Collectors.groupingBy(com.shop.community.entity.NoteImage::getNoteId,
+                        Collectors.mapping(com.shop.community.entity.NoteImage::getImageUrl, Collectors.toList())));
 
-                    return resp;
-                })
-                .collect(Collectors.toList());
+        // 按 noteIds 顺序构建响应（保持收藏时间倒序）
+        List<NoteResponse> records = new java.util.ArrayList<>();
+        for (Long noteId : noteIds) {
+            Note note = noteMap.get(noteId);
+            if (note == null) continue;
+            NoteResponse resp = new NoteResponse();
+            resp.setId(note.getId());
+            resp.setUserId(note.getUserId());
+            resp.setTitle(note.getTitle());
+            resp.setCoverUrl(note.getCoverUrl());
+            resp.setLikeCount(note.getLikeCount());
+            resp.setCommentCount(note.getCommentCount());
+            resp.setFavoriteCount(note.getFavoriteCount());
+            resp.setViewCount(note.getViewCount());
+            // 收藏列表：createTime 显示收藏时间而非笔记发布时间
+            var favTime = favoriteTimeMap.get(noteId);
+            resp.setCreateTime(favTime != null ? favTime : note.getCreateTime());
+            resp.setIsFavorited(true);
+
+            var userInfo = userInfoMap.get(note.getUserId());
+            if (userInfo != null) {
+                resp.setUserNickname(userInfo.nickname());
+                resp.setUserAvatar(userInfo.avatar());
+            }
+
+            resp.setImages(imageMap.getOrDefault(note.getId(), List.of()));
+            records.add(resp);
+        }
 
         return PageResult.of(records, result.getTotal(), result.getPages(), result.getCurrent(), result.getSize());
     }

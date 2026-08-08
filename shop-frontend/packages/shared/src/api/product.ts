@@ -1,5 +1,5 @@
 import { getHttpClient } from '../utils/http'
-import type { ProductDetail, ProductPageParams, PageResult, Category, Brand } from '../types'
+import type { ProductDetail, ProductPageParams, NewProductPageParams, PageResult, Category, Brand, NewProductBanner } from '../types'
 
 export const productApi = {
   getDetail: (id: number) =>
@@ -13,6 +13,14 @@ export const productApi = {
 
   getNew: (limit?: number) =>
     getHttpClient().get<ProductDetail[]>('/api/v1/products/new', { limit: limit || 10 } as Record<string, unknown>),
+
+  getNewPage: (params?: NewProductPageParams) =>
+    getHttpClient().get<PageResult<ProductDetail>>('/api/v1/products/new-page', params as Record<string, unknown>),
+}
+
+export const newProductBannerApi = {
+  getList: () =>
+    getHttpClient().get<NewProductBanner[]>('/api/v1/products/new-product-banners'),
 }
 
 export const categoryApi = {

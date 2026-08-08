@@ -62,6 +62,7 @@ const onAddCart = () => {
 
 <template>
   <div class="product-detail-page">
+    <button class="back-btn" @click="router.back()">← 返回</button>
     <!-- 面包屑 -->
     <div class="breadcrumb">
       <router-link to="/">首页</router-link> /
@@ -144,6 +145,7 @@ const onAddCart = () => {
 </template>
 
 <style scoped lang="scss">
+.back-btn { display: inline-block; padding: 6px 14px; border: 1px solid #ddd; border-radius: 6px; background: #fff; font-size: 13px; cursor: pointer; margin-bottom: 12px; color: #666; &:hover { border-color: $brand-orange; color: $brand-orange; } }
 .product-detail-page { max-width: 1200px; margin: 0 auto; }
 
 .breadcrumb { font-size: $font-size-xs; color: $text-hint; margin-bottom: $spacing-xl;

@@ -2,6 +2,7 @@ import { getHttpClient } from '../utils/http'
 import type {
   LoginResponse, LoginForm, PhoneLoginForm, EmailLoginForm, WxLoginForm,
   RegisterForm, SendEmailCodeForm, UpdateUserForm, ChangePasswordForm, UserInfo,
+  MemberInfo, IntegralLog, BalanceLog, PageResult,
 } from '../types'
 
 export const userApi = {
@@ -59,4 +60,18 @@ export const userApi = {
     if (json.code !== 200) throw new Error(json.message || '上传失败')
     return json.data.url
   },
+}
+
+export const walletApi = {
+  getMemberInfo: () =>
+    getHttpClient().get<MemberInfo>('/api/v1/users/me/member-info'),
+
+  getIntegralLogs: (params?: { pageNum?: number; pageSize?: number }) =>
+    getHttpClient().get<PageResult<IntegralLog>>('/api/v1/users/me/integral-logs', params as Record<string, unknown>),
+
+  getBalanceLogs: (params?: { pageNum?: number; pageSize?: number }) =>
+    getHttpClient().get<PageResult<BalanceLog>>('/api/v1/users/me/balance-logs', params as Record<string, unknown>),
+
+  recharge: (data: { amount: number; payChannel: string }) =>
+    getHttpClient().post<{ message: string }>('/api/v1/users/me/recharge', data as unknown as Record<string, unknown>),
 }

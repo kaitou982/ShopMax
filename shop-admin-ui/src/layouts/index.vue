@@ -8,12 +8,17 @@ import Navbar from './components/Navbar.vue'
 import TabsView from './components/TabsView.vue'
 import { useAppStore } from '@/stores/modules/app'
 import { useUserStore } from '@/stores/modules/user'
+import { useNotificationStore } from '@/stores/modules/notification'
 
 const appStore = useAppStore()
 const userStore = useUserStore()
+const notificationStore = useNotificationStore()
 
 onMounted(() => {
   userStore.initUser()
+  if (userStore.isLoggedIn) {
+    notificationStore.startPolling()
+  }
 })
 </script>
 

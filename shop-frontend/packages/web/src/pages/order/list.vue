@@ -5,6 +5,7 @@ import { orderApi, type OrderDetail } from '@shop/shared'
 
 const router = useRouter()
 const orders = ref<OrderDetail[]>([])
+const loading = ref(false)
 const activeTab = ref(-1)
 const refundingId = ref<number | null>(null)
 
@@ -19,19 +20,17 @@ const statusMap: Record<number, string> = { 0: '待付款', 1: '待发货', 2: '
 
 const filtered = computed(() => activeTab.value === -1 ? orders.value : orders.value.filter(o => o.status === activeTab.value))
 
-onMounted(async () => { try { orders.value = await orderApi.getMyOrders() } catch { /* noop */ } })
+onMounted(async () => { loading.value = true; try { orders.value = await orderApi.getMyOrders() } catch { /* noop */ } finally { loading.value = false } })
 
 const goDetail = (id: number) => router.push(`/order/${id}`)
 const handleReceive = async (o: OrderDetail) => {
   const r = confirm('确认已收到商品？确认后将完成订单。')
   if (r) {
-    await orderApi.confirmReceive(o.id)
-    orders.value = await orderApi.getMyOrders()
+    try { await orderApi.confirmReceive(o.id); orders.value = await orderApi.getMyOrders() } catch { alert('确认收货失败') }
   }
 }
 const handleCancel = async (o: OrderDetail) => {
-  await orderApi.cancel(o.id, '取消')
-  orders.value = await orderApi.getMyOrders()
+  try { await orderApi.cancel(o.id, '取消'); orders.value = await orderApi.getMyOrders() } catch { alert('取消订单失败') }
 }
 const handleRefund = async (o: OrderDetail) => {
   if (refundingId.value === o.id) return
@@ -62,7 +61,8 @@ const handleRefund = async (o: OrderDetail) => {
       <span v-for="t in tabs" :key="t.status" :class="{ active: activeTab === t.status }" @click="activeTab = t.status">{{ t.name }}</span>
     </div>
 
-    <div v-if="!filtered.length" class="empty">暂无订单</div>
+    <div v-if="loading" class="empty">加载中...</div>
+    <div v-else-if="!filtered.length" class="empty">暂无订单</div>
 
     <div class="order-card" v-for="o in filtered" :key="o.id">
       <div class="o-header">

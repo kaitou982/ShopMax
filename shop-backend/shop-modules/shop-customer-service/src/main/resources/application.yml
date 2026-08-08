@@ -1,5 +1,5 @@
 server:
-  port: 8091
+  port: 8097
 
 spring:
   application:
@@ -10,13 +10,13 @@ spring:
 
   cloud:
     nacos:
-      username: nacos
-      password: nacos
+      username: ${NACOS_USERNAME:nacos}
+      password: ${NACOS_PASSWORD:nacos}
       discovery:
         enabled: true
         server-addr: localhost:8848
       config:
-        enabled: true
+        enabled: false
         server-addr: localhost:8848
         file-extension: yaml
     sentinel:
@@ -27,14 +27,14 @@ spring:
   datasource:
     type: com.alibaba.druid.pool.DruidDataSource
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/shopmax?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    url: jdbc:mysql://localhost:3306/shop_customer?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
     username: root
-    password: aptx4869
+    password: ${DB_PASSWORD:aptx4869}
     druid:
-      initial-size: 5
-      min-idle: 5
-      max-active: 20
-      max-wait: 60000
+      initial-size: 2
+      min-idle: 2
+      max-active: 5
+      max-wait: 30000
       test-while-idle: true
       test-on-borrow: false
       test-on-return: false
@@ -46,6 +46,14 @@ spring:
     time-zone: GMT+8
     serialization:
       write-dates-as-timestamps: false
+
+  # Flyway数据库版本管理
+  flyway:
+    enabled: false
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    table: flyway_schema_history
+
   data:
     redis:
       host: localhost
@@ -58,37 +66,18 @@ spring:
           max-idle: 8
           min-idle: 0
 
-mybatis-plus:
-  configuration:
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
-    map-underscore-to-camel-case: true
-  global-config:
-    db-config:
-      id-type: auto
-      logic-delete-field: deleted
-      logic-delete-value: 1
-      logic-not-delete-value: 0
-  mapper-locations: classpath:/mapper/**/*.xml
 
-# JWT
+# JWT配置
 jwt:
-  secret: shopmax-secret-key-2026-for-jwt-signing-and-verification
+  secret: ${JWT_SECRET:shopmax-jwt-secret-2026-prod-f8K2mP9vR4xL7qW3aN6b}
   expiration: 86400000
 
-# MiMo AI (小米大模型)
-ai:
-  mimo:
-    api-key: sk-cip1h96j7bxhbt63d6nxghk5clet927um0y75ymiio7fsev2
-    base-url: https://api.xiaomimimo.com
-    model: mimo-v2-flash
-    max-tokens: 2048
-    temperature: 0.7
-
-logging:
-  level:
-    com.shop.customerservice: debug
-    com.shop.customerservice.mapper: debug
-
+# Feign + Sentinel 配置
 feign:
   sentinel:
     enabled: true
+  client:
+    config:
+      default:
+        connectTimeout: 5000
+        readTimeout: 10000

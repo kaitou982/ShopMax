@@ -10,7 +10,7 @@ const latestReviews = ref<ProductReview[]>([])
 const images = computed(() => { if(!product.value) return []; const s=product.value.subImages?product.value.subImages.split(',').filter(Boolean):[]; return [product.value.mainImage,...s] })
 onLoad((opts?:any) => {
   const id = Number(opts?.id)
-  productApi.getDetail(id).then(p=>{product.value=p}).finally(()=>loading.value=false)
+  productApi.getDetail(id).then(p=>{product.value=p}).catch(()=>{}).finally(()=>loading.value=false)
   reviewApi.getReviewStats(id).then(s=>{reviewStats.value=s}).catch(()=>{})
   reviewApi.getProductReviews(id,1,3).then(r=>{latestReviews.value=r?.records||[]}).catch(()=>{})
 })

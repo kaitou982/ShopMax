@@ -24,6 +24,10 @@ export const markRead = (id: number) => {
   return put(`/api/v1/admin/notifications/${id}/read`)
 }
 
+export const markUnread = (id: number) => {
+  return put(`/api/v1/admin/notifications/${id}/unread`)
+}
+
 export const markAllRead = () => {
   return put('/api/v1/admin/notifications/read-all')
 }

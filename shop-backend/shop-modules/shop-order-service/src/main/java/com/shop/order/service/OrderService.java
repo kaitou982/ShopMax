@@ -5,6 +5,7 @@ import com.shop.common.web.PageResult;
 import com.shop.order.entity.Order;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 订单服务接口
@@ -68,4 +69,39 @@ public interface OrderService extends IService<Order> {
      * 获取用户订单列表
      */
     List<Order> listByUserId(Long userId);
+
+    /**
+     * 更新订单状态（内部接口）
+     */
+    void updateOrderStatus(Long orderId, Integer status);
+
+    /**
+     * 获取订单基本信息（内部接口）
+     */
+    Map<String, Object> getOrderBasicInfo(Long orderId);
+
+    /**
+     * 根据订单号获取订单信息（内部接口）
+     */
+    Map<String, Object> getOrderInfoByOrderNo(String orderNo);
+
+    /**
+     * 根据订单号更新订单状态（内部接口）
+     */
+    void updateOrderStatusByOrderNo(String orderNo, Integer status);
+
+    /**
+     * 获取订单商品明细（内部接口）
+     */
+    List<Map<String, Object>> getOrderItems(Long orderId);
+
+    /**
+     * 获取仪表盘统计数据（内部接口）
+     */
+    Map<String, Object> getDashboardStats();
+
+    /**
+     * 自动取消超时订单
+     */
+    void autoCancelTimeoutOrders();
 }

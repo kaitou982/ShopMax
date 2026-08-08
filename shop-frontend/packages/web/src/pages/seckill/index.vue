@@ -133,6 +133,7 @@ onUnmounted(() => {
 
 <template>
   <div class="seckill-page">
+    <button class="back-btn" @click="router.back()">← 返回</button>
     <div class="seckill-header">
       <h1>
         <n-icon :size="24" color="#FF5000"><FlashOutline /></n-icon>
@@ -228,6 +229,7 @@ onUnmounted(() => {
 </template>
 
 <style scoped lang="scss">
+.back-btn { display: inline-block; padding: 6px 14px; border: 1px solid #ddd; border-radius: 6px; background: #fff; font-size: 13px; cursor: pointer; margin-bottom: 12px; color: #666; &:hover { border-color: $brand-orange; color: $brand-orange; } }
 .seckill-page {
   max-width: 1200px;
   margin: 0 auto;

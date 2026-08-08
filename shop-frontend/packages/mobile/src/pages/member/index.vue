@@ -52,6 +52,8 @@ onMounted(() => fetchMemberInfo())
     </view>
 
     <scroll-view scroll-y class="main" :style="{ paddingTop: (sbh + 50) + 'px' }">
+      <view v-if="loading" class="loading-state">加载中...</view>
+      <template v-else>
       <!-- 会员等级卡片 -->
       <view class="level-card" :style="{ background: levelColors[memberInfo?.memberLevel || 1] }">
         <view class="level-top">
@@ -141,6 +143,7 @@ onMounted(() => fetchMemberInfo())
           <uni-icons type="right" size="16" color="#ccc" />
         </view>
       </view>
+    </template>
     </scroll-view>
   </view>
 </template>

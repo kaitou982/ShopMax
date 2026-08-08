@@ -1,10 +1,8 @@
 package com.shop.admin.service;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.shop.admin.entity.Order;
-import com.shop.admin.mapper.OrderMapper;
-import com.shop.admin.mapper.UserMapper;
+import com.shop.common.feign.client.InternalOrderClient;
+import com.shop.common.feign.client.InternalUserClient;
+import com.shop.common.web.Result;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -20,40 +18,50 @@ import java.util.*;
 @RequiredArgsConstructor
 public class DashboardService {
 
-    private final OrderMapper orderMapper;
-    private final UserMapper userMapper;
+    private final InternalOrderClient internalOrderClient;
+    private final InternalUserClient internalUserClient;
 
     public Map<String, Object> getStats() {
         Map<String, Object> stats = new LinkedHashMap<>();
 
-        // 今日数据
-        long todayOrders = orderMapper.countTodayOrders();
-        BigDecimal todaySales = orderMapper.sumTodaySales();
-        long todayNewUsers = userMapper.countTodayNewUsers();
-        long pendingOrders = orderMapper.countPendingOrders();
+        // 从订单服务获取统计数据
+        Result<Map<String, Object>> orderStatsResult = internalOrderClient.getDashboardStats();
+        Map<String, Object> orderStats = orderStatsResult.getData();
+
+        long todayOrders = getLong(orderStats, "today_orders");
+        BigDecimal todaySales = getDecimal(orderStats, "today_sales");
+        long pendingOrders = getLong(orderStats, "pending_orders");
+        long yesterdayOrders = getLong(orderStats, "yesterday_orders");
+        BigDecimal yesterdaySales = getDecimal(orderStats, "yesterday_sales");
+
+        // 从用户服务获取注册统计
+        Result<Map<String, Object>> userStatsResult = internalUserClient.getRegisterStats();
+        Map<String, Object> userStats = userStatsResult.getData();
+
+        long todayNewUsers = getLong(userStats, "today_new_users");
+        long yesterdayNewUsers = getLong(userStats, "yesterday_new_users");
 
         stats.put("todayOrders", todayOrders);
         stats.put("todaySales", todaySales != null ? todaySales : BigDecimal.ZERO);
         stats.put("todayNewUsers", todayNewUsers);
         stats.put("pendingOrders", pendingOrders);
 
-        // 昨日数据
-        long yesterdayOrders = orderMapper.countYesterdayOrders();
-        BigDecimal yesterdaySales = orderMapper.sumYesterdaySales();
-        long yesterdayNewUsers = userMapper.countYesterdayNewUsers();
-        long yesterdayPending = orderMapper.countYesterdayPendingOrders();
-
         // 计算环比变化百分比
         stats.put("orderChange", calcChange(todayOrders, yesterdayOrders));
         stats.put("salesChange", calcChange(todaySales, yesterdaySales));
         stats.put("userChange", calcChange(todayNewUsers, yesterdayNewUsers));
-        stats.put("pendingChange", calcChange(pendingOrders, yesterdayPending));
+        stats.put("pendingChange", calcChange(pendingOrders, 0)); // 昨日待处理数暂无
 
         return stats;
     }
 
     public List<Map<String, Object>> getSalesTrend() {
-        List<Map<String, Object>> raw = orderMapper.salesTrend7Days();
+        Result<Map<String, Object>> result = internalOrderClient.getDashboardStats();
+        Map<String, Object> orderStats = result.getData();
+
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> raw = (List<Map<String, Object>>) orderStats.get("sales_trend_7days");
+
         Map<String, BigDecimal> dateMap = new LinkedHashMap<>();
 
         DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd");
@@ -74,35 +82,39 @@ public class DashboardService {
             }
         }
 
-        List<Map<String, Object>> result = new ArrayList<>();
+        List<Map<String, Object>> trendList = new ArrayList<>();
         for (Map.Entry<String, BigDecimal> entry : dateMap.entrySet()) {
             Map<String, Object> item = new LinkedHashMap<>();
             item.put("date", entry.getKey());
             item.put("amount", entry.getValue());
-            result.add(item);
+            trendList.add(item);
         }
-        return result;
+        return trendList;
     }
 
     public List<Map<String, Object>> getRecentOrders() {
-        LambdaQueryWrapper<Order> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(Order::getDeleted, 0);
-        wrapper.ne(Order::getStatus, 6);
-        wrapper.orderByDesc(Order::getCreateTime);
-        Page<Order> page = new Page<>(1, 10);
-        Page<Order> result = orderMapper.selectPage(page, wrapper);
+        // 最近订单需要通过 Feign 调用订单服务
+        // 暂时返回空列表，后续可添加 /internal/orders/recent 端点
+        return new ArrayList<>();
+    }
 
-        List<Map<String, Object>> list = new ArrayList<>();
-        for (Order o : result.getRecords()) {
-            Map<String, Object> item = new LinkedHashMap<>();
-            item.put("id", o.getId());
-            item.put("orderNo", o.getOrderNo());
-            item.put("amount", o.getPayAmount());
-            item.put("status", o.getStatus());
-            item.put("time", o.getCreateTime());
-            list.add(item);
+    private long getLong(Map<String, Object> map, String key) {
+        if (map == null || map.get(key) == null) return 0L;
+        Object val = map.get(key);
+        if (val instanceof Number) {
+            return ((Number) val).longValue();
         }
-        return list;
+        // 处理 String 类型（Jackson 将 Long 序列化为 String 的情况）
+        try {
+            return Long.parseLong(val.toString());
+        } catch (NumberFormatException e) {
+            return 0L;
+        }
+    }
+
+    private BigDecimal getDecimal(Map<String, Object> map, String key) {
+        if (map == null || map.get(key) == null) return BigDecimal.ZERO;
+        return new BigDecimal(map.get(key).toString());
     }
 
     /** 计算环比变化百分比（保留一位小数），昨日为0则返回100表示无穷大 */

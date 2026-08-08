@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 @Data
 @TableName("mms_coupon_receive")
 public class CouponReceive {
-    @TableId(type = IdType.AUTO)
+    @TableId(type = IdType.ASSIGN_ID)
     private Long id;
     private Long couponId;
     private Long userId;

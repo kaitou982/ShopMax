@@ -40,6 +40,13 @@ public class NotificationController {
         return Result.success();
     }
 
+    @Operation(summary = "标记单条未读")
+    @PutMapping("/{id}/unread")
+    public Result<Void> markUnread(@PathVariable Long id) {
+        notificationService.markUnread(id);
+        return Result.success();
+    }
+
     @Operation(summary = "全部已读")
     @PutMapping("/read-all")
     public Result<Void> markAllRead() {

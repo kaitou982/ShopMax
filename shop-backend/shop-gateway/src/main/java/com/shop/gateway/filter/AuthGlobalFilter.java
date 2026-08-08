@@ -9,6 +9,7 @@ import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
 import org.springframework.core.io.buffer.DataBuffer;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
@@ -18,6 +19,7 @@ import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
@@ -33,8 +35,16 @@ import java.util.List;
 @Component
 public class AuthGlobalFilter implements GlobalFilter, Ordered {
 
+    private static final String BLACKLIST_PREFIX = "token:blacklist:";
+
     @Value("${jwt.secret}")
     private String secret;
+
+    private final StringRedisTemplate stringRedisTemplate;
+
+    public AuthGlobalFilter(StringRedisTemplate stringRedisTemplate) {
+        this.stringRedisTemplate = stringRedisTemplate;
+    }
 
     /**
      * 白名单路径（前缀匹配）— 无需认证直接放行
@@ -102,6 +112,19 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
         // 验证 Token
         if (!validateToken(token)) {
             return unauthorized(exchange, "Token无效或已过期");
+        }
+
+        // 检查 Token 黑名单
+        String blacklistKey = BLACKLIST_PREFIX + token;
+        try {
+            Boolean isBlacklisted = stringRedisTemplate.hasKey(blacklistKey);
+            if (Boolean.TRUE.equals(isBlacklisted)) {
+                log.warn("Token已在黑名单中，拒绝访问");
+                return unauthorized(exchange, "Token已被注销");
+            }
+        } catch (Exception e) {
+            log.warn("Token黑名单检查异常: {}", e.getMessage());
+            // 黑名单检查失败不阻断请求，降级放行
         }
 
         // 将 userId 和 role 写入请求头传递给下游服务

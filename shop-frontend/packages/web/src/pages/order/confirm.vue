@@ -3,11 +3,13 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { NIcon } from 'naive-ui'
 import { ChevronForwardOutline, CloseOutline } from '@vicons/ionicons5'
-import { orderApi, addressApi, couponApi, type AddressInfo, type CouponReceive } from '@shop/shared'
-import { useCartStore } from '@/stores'
+import { orderApi, addressApi, couponApi, getMemberDiscount, type AddressInfo, type CouponReceive } from '@shop/shared'
+import { useCartStore, useUserStore } from '@/stores'
 
 const router = useRouter()
 const cartStore = useCartStore()
+const pageLoading = ref(true)
+const userStore = useUserStore()
 const address = ref<AddressInfo | null>(null)
 const remark = ref('')
 const submitting = ref(false)
@@ -39,7 +41,25 @@ const freightDiscount = computed(() => {
   return Math.min(d, freight.value)
 })
 
-const finalPay = computed(() => Math.max(0, total.value + freight.value - couponDiscount.value - freightDiscount.value))
+// 会员等级折扣
+const memberLevel = computed(() => userStore.userInfo?.memberLevel || 1)
+const memberDiscountRate = computed(() => getMemberDiscount(memberLevel.value))
+const memberDiscount = computed(() => {
+  if (memberDiscountRate.value >= 1) return 0
+  return Number((total.value * (1 - memberDiscountRate.value)).toFixed(2))
+})
+
+// 积分抵扣
+const useIntegral = ref(false)
+const integralBalance = computed(() => userStore.userInfo?.integral || 0)
+const maxIntegralDeduct = computed(() => {
+  if (integralBalance.value <= 0) return 0
+  const afterCoupon = total.value * memberDiscountRate.value + freight.value - couponDiscount.value - freightDiscount.value
+  return Math.min(integralBalance.value / 100, afterCoupon * 0.5)
+})
+const integralDiscount = computed(() => useIntegral.value ? Number(maxIntegralDeduct.value.toFixed(2)) : 0)
+
+const finalPay = computed(() => Math.max(0, total.value * memberDiscountRate.value + freight.value - couponDiscount.value - freightDiscount.value - integralDiscount.value))
 
 onMounted(async () => {
   try { address.value = await addressApi.getDefault() } catch {
@@ -59,6 +79,7 @@ onMounted(async () => {
       return true
     })
   } catch { /* noop */ }
+  pageLoading.value = false
 })
 
 const selectCoupon = (c: CouponReceive) => {
@@ -78,6 +99,8 @@ const submit = async () => {
     await orderApi.create({
       totalAmount: total.value, payAmount: finalPay.value, freightAmount: freight.value,
       couponAmount: couponDiscount.value + freightDiscount.value,
+      integralAmount: integralDiscount.value,
+      useIntegral: useIntegral.value ? Math.floor(integralDiscount.value * 100) : 0,
       userCouponId: selectedCoupon.value?.id,
       userCouponId2: selectedCoupon2.value?.id,
       receiverName: address.value.receiverName, receiverPhone: address.value.receiverPhone,
@@ -96,6 +119,8 @@ const goAddress = () => router.push('/user')
 
 <template>
   <div class="oc-page">
+    <div v-if="pageLoading" class="loading-state">加载中...</div>
+    <template v-else>
     <h2>确认订单</h2>
 
     <div class="oc-msg" v-if="msg">{{ msg }}</div>
@@ -163,11 +188,11 @@ const goAddress = () => router.push('/user')
           <n-icon :size="16" class="cs-remove" @click="removeCoupon2"><CloseOutline /></n-icon>
         </div>
         <div v-else class="coupon-trigger" @click="showCouponPicker2 = !showCouponPicker2">
-          + 叠加运费券或其他优惠
+          + 叠加运费券
           <n-icon :size="16" color="#ccc"><ChevronForwardOutline /></n-icon>
         </div>
         <div class="coupon-list" v-if="showCouponPicker2">
-          <div class="coupon-item" v-for="c in availableCoupons.filter(x => x.id !== selectedCoupon?.id)" :key="c.id" @click="selectCoupon2(c)">
+          <div class="coupon-item" v-for="c in availableCoupons.filter(x => x.id !== selectedCoupon?.id && x.couponType !== selectedCoupon?.couponType)" :key="c.id" @click="selectCoupon2(c)">
             <div class="ci-left">
               <span class="ci-type">{{ {1:'满减',2:'折扣',3:'运费',4:'新人'}[c.couponType]||'券' }}</span>
               <span class="ci-val">{{ c.couponType === 2 ? (c.discountRate||0)*10+'折' : '¥'+(c.discountAmount||0) }}</span>
@@ -181,12 +206,26 @@ const goAddress = () => router.push('/user')
       </div>
     </div>
 
+    <!-- 积分抵扣 -->
+    <div class="section integral-section" v-if="integralBalance > 0">
+      <div class="section-title">积分抵扣</div>
+      <div class="integral-row">
+        <label class="integral-label">
+          <input type="checkbox" v-model="useIntegral" class="integral-check" />
+          <span>使用积分抵扣</span>
+          <span class="integral-info">可用 {{ integralBalance }} 积分，最多抵 ¥{{ maxIntegralDeduct.toFixed(2) }}</span>
+        </label>
+      </div>
+    </div>
+
     <!-- 汇总 -->
     <div class="summary">
       <div class="row"><span>商品总额</span><span>¥{{ total.toFixed(2) }}</span></div>
-      <div class="row"><span>运费</span><span>免运费</span></div>
+      <div class="row" v-if="memberDiscount > 0"><span>会员折扣</span><span class="discount">-¥{{ memberDiscount.toFixed(2) }}</span></div>
+      <div class="row"><span>运费</span><span>{{ freight > 0 ? '¥'+freight.toFixed(2) : '免运费' }}</span></div>
       <div class="row" v-if="couponDiscount > 0"><span>优惠券</span><span class="discount">-¥{{ couponDiscount.toFixed(2) }}</span></div>
       <div class="row" v-if="freightDiscount > 0"><span>运费券</span><span class="discount">-¥{{ freightDiscount.toFixed(2) }}</span></div>
+      <div class="row" v-if="integralDiscount > 0"><span>积分抵扣</span><span class="discount">-¥{{ integralDiscount.toFixed(2) }}</span></div>
       <div class="row total"><span>应付总额</span><span class="amount">¥{{ finalPay.toFixed(2) }}</span></div>
     </div>
 
@@ -194,9 +233,11 @@ const goAddress = () => router.push('/user')
       {{ submitting ? '提交中...' : '提交订单' }}
     </button>
   </div>
+  </template>
 </template>
 
 <style scoped lang="scss">
+.loading-state { text-align: center; padding: 120px 0; color: #999; font-size: 15px; }
 .oc-page { max-width: 800px; }
 h2 { margin-bottom: 24px; }
 .oc-msg { padding: 10px 16px; border-radius: 8px; background: #FFF3EC; color: $brand-orange; font-size: $font-size-sm; margin-bottom: $spacing-base; }
@@ -212,6 +253,11 @@ h2 { margin-bottom: 24px; }
   .sub { font-weight: 600; }
 }
 .remark { width: 100%; border: 1px solid #e5e5ea; border-radius: 8px; padding: 10px 12px; font-size: 13px; outline: none; box-sizing: border-box; }
+.integral-section { cursor: default; }
+.integral-row { display: flex; align-items: center; }
+.integral-label { display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 14px; }
+.integral-check { width: 16px; height: 16px; accent-color: $brand-orange; }
+.integral-info { font-size: 12px; color: $text-hint; margin-left: 8px; }
 .summary { background: #fff; border-radius: 12px; padding: 20px; margin-bottom: 24px; }
 .row { display: flex; justify-content: space-between; font-size: 14px; padding: 6px 0; color: #666; &.total { border-top: 1px solid #eee; margin-top: 8px; padding-top: 12px; font-size: 16px; font-weight: 700; color: #1c1c1e; } }
 .amount { color: #FF5000; font-size: 20px; }

@@ -57,12 +57,12 @@ const goCart = () => uni.switchTab({ url: '/pages/cart/index' })
 const goPage = (url: string) => uni.navigateTo({ url })
 const iconNav: Record<string, () => void> = {
   '秒杀': () => uni.navigateTo({ url:'/pages/seckill/index' }),
-  '会员': () => uni.showToast({ title:'即将开放，敬请期待', icon:'none' }),
+  '会员': () => uni.navigateTo({ url:'/pages/member/index' }),
   '百补': () => uni.showToast({ title:'即将开放，敬请期待', icon:'none' }),
   '社区': () => uni.navigateTo({ url:'/pages/community/index' }),
   '直播': () => uni.navigateTo({ url:'/pages/live/index' }),
   '领券': () => uni.navigateTo({ url:'/pages/coupon/center' }),
-  '新品': () => uni.navigateTo({ url:'/pages/search/index' }),
+  '新品': () => uni.navigateTo({ url:'/pages/new-product/index' }),
   '收藏': () => uni.navigateTo({ url:'/pages/user/favorites' }),
 }
 </script>
@@ -172,7 +172,7 @@ const iconNav: Record<string, () => void> = {
 .search-text { font-size: 24rpx; color: #999; }
 .cart-icon { display: flex; align-items: center; justify-content: center; }
 .main { flex: 1; }
-.banner { height: 300rpx; } .b-img { width: 100%; height: 100%; }
+.banner { height: 540rpx; } .b-img { width: 100%; height: 100%; }
 .icons { display: flex; flex-wrap: wrap; padding: 20rpx 16rpx; background: #fff; margin-bottom: 12rpx; }
 .ic { width: 25%; display: flex; flex-direction: column; align-items: center; padding: 12rpx 0; }
 .ic-circle { width: 80rpx; height: 80rpx; border-radius: 50%; background: #FFF3EC; display: flex; align-items: center; justify-content: center; font-size: 36rpx; }

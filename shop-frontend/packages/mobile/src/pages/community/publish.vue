@@ -40,12 +40,12 @@ const uploadImage = (filePath: string): Promise<string> => {
 
 const goBack = () => uni.navigateBack()
 const submit = async () => {
-  if (!content.value.trim()) { uni.showToast({ title: '请输入内容', icon: 'none' }); return }
+  if (!content.value.trim()) { await uni.showToast({title: '请输入内容', icon: 'none'}); return }
   submitting.value = true
   try {
     let imageUrls: string[] = []
     if (images.value.length > 0) {
-      uni.showLoading({ title: '上传图片中...' })
+      await uni.showLoading({title: '上传图片中...'})
       imageUrls = await Promise.all(images.value.map(f => uploadImage(f)))
       uni.hideLoading()
     }
@@ -55,7 +55,7 @@ const submit = async () => {
       images: imageUrls.map((url, i) => ({ imageUrl: url, sortOrder: i })),
       status: 3
     })
-    uni.showToast({ title: '发布成功', icon: 'success' })
+    await uni.showToast({title: '发布成功', icon: 'success'})
     setTimeout(() => uni.navigateBack(), 1000)
   } catch { /* handled */ } finally { submitting.value = false }
 }

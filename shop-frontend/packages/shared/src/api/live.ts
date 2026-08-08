@@ -6,14 +6,14 @@ export const liveRoomApi = {
   getLivingRooms: () =>
     getHttpClient().get<LiveRoom[]>('/api/v1/live/rooms/living'),
 
-  getRoomDetail: (id: number) =>
+  getRoomDetail: (id: string | number) =>
     getHttpClient().get<LiveRoom>(`/api/v1/live/rooms/${id}`),
 
   getRoomList: () =>
     getHttpClient().get<{ records: LiveRoom[] }>('/api/v1/live/rooms/public').then(res => res.records),
 
   // 直播间商品
-  getRoomProducts: (roomId: number) =>
+  getRoomProducts: (roomId: string | number) =>
     getHttpClient().get<LiveProduct[]>(`/api/v1/live/products/room/${roomId}`),
 
   // 礼物相关

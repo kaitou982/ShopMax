@@ -3,13 +3,14 @@ import { ref, onMounted } from 'vue'
 import { addressApi, type AddressInfo } from '@shop/shared'
 
 const list = ref<AddressInfo[]>([])
+const loading = ref(false)
 const form = ref({ receiverName:'',receiverPhone:'',province:'',city:'',district:'',detailAddress:'' })
 const editing = ref<AddressInfo|null>(null)
 const showForm = ref(false)
 const saving = ref(false)
 
 onMounted(load)
-async function load() { try { list.value = await addressApi.getList() } catch {} }
+async function load() { loading.value = true; try { list.value = await addressApi.getList() } catch {} finally { loading.value = false } }
 
 function openAdd() { editing.value=null;form.value={receiverName:'',receiverPhone:'',province:'',city:'',district:'',detailAddress:''};showForm.value=true }
 function openEdit(a:AddressInfo) { editing.value=a;form.value={receiverName:a.receiverName,receiverPhone:a.receiverPhone,province:a.province,city:a.city,district:a.district,detailAddress:a.detailAddress};showForm.value=true }
@@ -31,7 +32,8 @@ async function setDefault(id:number) { await addressApi.setDefault(id);load() }
 <template>
   <view class="ap">
     <view class="hd"><text class="hdt">收货地址</text><button class="add" @click="openAdd">+ 新增</button></view>
-    <view v-if="!list.length&&!showForm" class="empty">暂无收货地址</view>
+    <view v-if="loading" class="empty">加载中...</view>
+    <view v-else-if="!list.length&&!showForm" class="empty">暂无收货地址</view>
     <view class="card" v-for="a in list" :key="a.addressId"><text class="an">{{a.receiverName}} {{a.receiverPhone}}</text><text class="aa">{{a.fullAddress}}</text>
       <view class="acts"><view class="act-btn" @click="openEdit(a)">编辑</view><view class="act-btn del" @click="del(a.addressId)">删除</view><view class="act-btn" v-if="!a.isDefault" @click="setDefault(a.addressId)">默认</view><text class="dt" v-else>默认</text></view>
     </view>

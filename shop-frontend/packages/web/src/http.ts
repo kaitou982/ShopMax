@@ -48,12 +48,12 @@ api.interceptors.response.use(
   },
 )
 
-// 适配器：将 axios 实例包装为 HttpClient 接口
+// 适配器：axios 拦截器已解包 body.data，此处直接返回
 const httpClient: HttpClient = {
-  get: (url, params) => api.get(url, { params }).then(r => r as any),
-  post: (url, data) => api.post(url, data).then(r => r as any),
-  put: (url, data) => api.put(url, data).then(r => r as any),
-  delete: (url) => api.delete(url).then(r => r as any),
+  get: (url, params) => api.get(url, { params }) as Promise<unknown>,
+  post: (url, data) => api.post(url, data) as Promise<unknown>,
+  put: (url, data) => api.put(url, data) as Promise<unknown>,
+  delete: (url) => api.delete(url) as Promise<unknown>,
 }
 
 setHttpClient(httpClient)

@@ -6,6 +6,7 @@
     "dev:mobile": "pnpm --filter @shop/mobile dev",
     "build:web": "pnpm --filter @shop/web build",
     "build:mobile": "pnpm --filter @shop/mobile build",
+    "build:mobile:h5": "pnpm --filter @shop/mobile build:h5",
     "lint": "pnpm -r lint",
     "typecheck": "pnpm -r typecheck"
   },

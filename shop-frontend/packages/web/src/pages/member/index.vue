@@ -1,9 +1,11 @@
 <script setup lang="ts">
 defineOptions({ name: 'MemberCenterPage' })
 import { ref, onMounted, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { NTabs, NTabPane, NButton, NEmpty, NTag } from 'naive-ui'
 import { walletApi, type MemberInfo, type IntegralLog, type BalanceLog } from '@shop/shared'
 
+const router = useRouter()
 const memberInfo = ref<MemberInfo | null>(null)
 const loading = ref(true)
 const activeTab = ref('integral')
@@ -105,6 +107,7 @@ onMounted(() => {
 
 <template>
   <div class="member-page" v-loading="loading">
+    <button class="back-btn" @click="router.back()">← 返回</button>
     <!-- 等级卡片 -->
     <div class="level-card" :style="{ background: levelColors[memberInfo?.memberLevel || 1] }">
       <div class="level-left">
@@ -226,6 +229,7 @@ onMounted(() => {
 </template>
 
 <style scoped lang="scss">
+.back-btn { display: inline-block; padding: 6px 14px; border: 1px solid #ddd; border-radius: 6px; background: #fff; font-size: 13px; cursor: pointer; margin-bottom: 12px; color: #666; &:hover { border-color: $brand-orange; color: $brand-orange; } }
 .member-page { max-width: 1000px; margin: 0 auto; }
 
 .level-card {

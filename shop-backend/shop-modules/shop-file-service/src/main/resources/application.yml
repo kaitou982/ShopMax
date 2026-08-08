@@ -8,8 +8,8 @@ spring:
     import: optional:nacos:${spring.application.name}.yaml
   cloud:
     nacos:
-      username: nacos
-      password: nacos
+      username: ${NACOS_USERNAME:nacos}
+      password: ${NACOS_PASSWORD:nacos}
       discovery:
         enabled: true
         server-addr: localhost:8848
@@ -37,14 +37,14 @@ storage:
   minio:
     enabled: true
     endpoint: http://localhost:9000
-    access-key: minioadmin
-    secret-key: minioadmin123
+    access-key: ${MINIO_ACCESS_KEY:minioadmin}
+    secret-key: ${MINIO_SECRET_KEY:minioadmin123}
     bucket: shopmax
     base-url: http://localhost:9000/shopmax
     max-file-size: 10485760
 
 jwt:
-  secret: shopmax-secret-key-2026-for-jwt-signing-and-verification
+  secret: ${JWT_SECRET:shopmax-jwt-secret-2026-prod-f8K2mP9vR4xL7qW3aN6b}
   expiration: 86400000
 
 logging:
@@ -54,3 +54,13 @@ logging:
 feign:
   sentinel:
     enabled: true
+
+# Actuator 端点配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always

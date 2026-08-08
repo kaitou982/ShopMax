@@ -8,7 +8,10 @@ import com.shop.common.enums.PayMethod;
 import com.shop.common.enums.PaymentStatus;
 import com.shop.common.enums.RefundStatus;
 import com.shop.common.exception.BusinessException;
+import com.shop.common.feign.client.InternalOrderClient;
+import com.shop.common.feign.client.InternalUserClient;
 import com.shop.common.web.PageResult;
+import com.shop.common.web.Result;
 import com.shop.payment.entity.Payment;
 import com.shop.payment.entity.RefundRecord;
 import com.shop.payment.gateway.AlipayGateway;
@@ -18,7 +21,7 @@ import com.shop.payment.mapper.PaymentMapper;
 import com.shop.payment.mapper.RefundRecordMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,11 +37,16 @@ import java.util.Random;
 @RequiredArgsConstructor
 public class PaymentService extends ServiceImpl<PaymentMapper, Payment> {
 
-    private final JdbcTemplate jdbcTemplate;
     private final AlipayGateway alipayGateway;
     private final WechatPayGateway wechatPayGateway;
     private final PaymentGatewayProperties properties;
     private final RefundRecordMapper refundRecordMapper;
+
+    @Autowired(required = false)
+    private InternalUserClient internalUserClient;
+
+    @Autowired(required = false)
+    private InternalOrderClient internalOrderClient;
     private static final DateTimeFormatter DT = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
 
     /** 创建支付 → 返回支付入口信息 */
@@ -130,16 +138,13 @@ public class PaymentService extends ServiceImpl<PaymentMapper, Payment> {
     /** 余额支付 */
     private Map<String, Object> executeBalancePay(String paymentNo) {
         Payment p = getByPaymentNo(paymentNo);
-        int updated = jdbcTemplate.update(
-                "UPDATE ums_user SET balance = balance - ? WHERE id = ? AND balance >= ?",
-                p.getAmount(), p.getUserId(), p.getAmount());
-        if (updated == 0) throw new BusinessException("余额不足");
-
-        jdbcTemplate.update(
-                "INSERT INTO ums_balance_log(user_id, change_amount, after_amount, type, biz_id, remark, create_time) " +
-                        "SELECT ?, ?, balance, 2, ?, '余额支付订单', NOW() FROM ums_user WHERE id = ?",
-                p.getUserId(), p.getAmount().negate(), p.getOrderNo(), p.getUserId());
-
+        if (internalUserClient != null) {
+            Result<Void> balanceResult = internalUserClient.deductBalance(p.getUserId(),
+                    Map.of("amount", p.getAmount(), "description", "余额支付订单"));
+            if (balanceResult == null || balanceResult.getCode() != 200) {
+                throw new BusinessException("余额不足");
+            }
+        }
         completePayment(p, "BALANCE_" + paymentNo);
         return Map.of("paymentNo", paymentNo, "status", "success", "method", "balance");
     }
@@ -386,12 +391,15 @@ public class PaymentService extends ServiceImpl<PaymentMapper, Payment> {
 
     /** 余额退款 */
     private void executeBalanceRefund(Payment p, BigDecimal refundAmount, String reason) {
-        jdbcTemplate.update("UPDATE ums_user SET balance = balance + ? WHERE id = ?",
-                refundAmount, p.getUserId());
-        jdbcTemplate.update(
-                "INSERT INTO ums_balance_log(user_id, change_amount, after_amount, type, biz_id, remark, create_time) "
-                        + "SELECT ?, ?, balance, 3, ?, ?, NOW() FROM ums_user WHERE id = ?",
-                p.getUserId(), refundAmount, p.getOrderNo(), reason, p.getUserId());
+        if (internalUserClient != null) {
+            try {
+                internalUserClient.addBalance(p.getUserId(),
+                        Map.of("amount", refundAmount, "description", reason));
+            } catch (Exception e) {
+                log.error("余额退款失败: userId={}, amount={}, error={}", p.getUserId(), refundAmount, e.getMessage(), e);
+                throw new BusinessException("余额退款失败: " + e.getMessage());
+            }
+        }
     }
 
     /** 退款成功 */
@@ -413,8 +421,14 @@ public class PaymentService extends ServiceImpl<PaymentMapper, Payment> {
         }
         baseMapper.updateById(p);
 
-        jdbcTemplate.update("UPDATE oms_order SET status = ? WHERE id = ?",
-                OrderStatus.REFUNDED.getCode(), p.getOrderId());
+        if (internalOrderClient != null) {
+            try {
+                internalOrderClient.updateOrderStatus(p.getOrderId(),
+                        Map.of("status", OrderStatus.REFUNDED.getCode()));
+            } catch (Exception e) {
+                log.warn("更新订单状态失败: orderId={}, error={}", p.getOrderId(), e.getMessage());
+            }
+        }
 
         log.info("退款成功: paymentNo={}, refundNo={}, amount={}, totalRefunded={}",
                 p.getPaymentNo(), record.getRefundNo(), refundAmount, totalRefunded);
@@ -429,8 +443,14 @@ public class PaymentService extends ServiceImpl<PaymentMapper, Payment> {
         p.setStatus(PaymentStatus.SUCCESS.getCode());
         baseMapper.updateById(p);
 
-        jdbcTemplate.update("UPDATE oms_order SET status = ? WHERE id = ?",
-                OrderStatus.PENDING_SHIP.getCode(), p.getOrderId());
+        if (internalOrderClient != null) {
+            try {
+                internalOrderClient.updateOrderStatus(p.getOrderId(),
+                        Map.of("status", OrderStatus.PENDING_SHIP.getCode()));
+            } catch (Exception e) {
+                log.warn("更新订单状态失败: orderId={}, error={}", p.getOrderId(), e.getMessage());
+            }
+        }
 
         log.warn("退款失败: paymentNo={}, refundNo={}, reason={}",
                 p.getPaymentNo(), record.getRefundNo(), failReason);
@@ -496,8 +516,15 @@ public class PaymentService extends ServiceImpl<PaymentMapper, Payment> {
         p.setPayTime(LocalDateTime.now());
         p.setCallbackTime(LocalDateTime.now());
         baseMapper.updateById(p);
-        jdbcTemplate.update("UPDATE oms_order SET status = ?, pay_type = ?, pay_time = NOW() WHERE id = ?",
-                OrderStatus.PENDING_SHIP.getCode(), p.getPayMethod(), p.getOrderId());
+        if (internalOrderClient != null) {
+            try {
+                internalOrderClient.updateOrderStatus(p.getOrderId(),
+                        Map.of("status", OrderStatus.PENDING_SHIP.getCode(),
+                                "payType", p.getPayMethod()));
+            } catch (Exception e) {
+                log.warn("更新订单状态失败: orderId={}, error={}", p.getOrderId(), e.getMessage());
+            }
+        }
         log.info("支付完成: paymentNo={}, orderNo={}, amount={}, txnId={}",
                 p.getPaymentNo(), p.getOrderNo(), p.getAmount(), transactionId);
     }
@@ -540,13 +567,62 @@ public class PaymentService extends ServiceImpl<PaymentMapper, Payment> {
         return p;
     }
 
+    /**
+     * 根据订单ID获取支付单号（内部接口）
+     */
+    public String getPaymentNoByOrderId(Long orderId) {
+        LambdaQueryWrapper<Payment> w = new LambdaQueryWrapper<>();
+        w.eq(Payment::getOrderId, orderId)
+         .eq(Payment::getStatus, PaymentStatus.SUCCESS.getCode())
+         .last("LIMIT 1");
+        Payment p = baseMapper.selectOne(w);
+        return p != null ? p.getPaymentNo() : null;
+    }
+
     private Map<String, Object> queryOrder(Long orderId, Long userId) {
         try {
-            return jdbcTemplate.queryForMap(
-                    "SELECT id, order_no, status, pay_amount FROM oms_order WHERE id = ? AND user_id = ? AND deleted = 0",
-                    orderId, userId);
+            if (internalOrderClient == null) {
+                return null;
+            }
+            Result<Map<String, Object>> result = internalOrderClient.getOrderInfo(orderId);
+            if (result == null || result.getCode() != 200 || result.getData() == null) {
+                return null;
+            }
+            Map<String, Object> orderInfo = result.getData();
+            // 验证订单属于当前用户
+            Object userIdObj = orderInfo.get("user_id");
+            if (userIdObj == null) {
+                return null;
+            }
+            Long orderUserId;
+            if (userIdObj instanceof Long uid) {
+                orderUserId = uid;
+            } else {
+                orderUserId = Long.valueOf(userIdObj.toString());
+            }
+            if (!orderUserId.equals(userId)) {
+                return null;
+            }
+            return orderInfo;
         } catch (Exception e) {
+            log.warn("查询订单信息失败: orderId={}, error={}", orderId, e.getMessage());
             return null;
+        }
+    }
+
+    /**
+     * 根据订单号更新支付状态（内部接口）
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void updatePaymentStatusByOrderNo(String orderNo, Integer status) {
+        LambdaQueryWrapper<Payment> w = new LambdaQueryWrapper<>();
+        w.eq(Payment::getOrderNo, orderNo);
+        w.eq(Payment::getStatus, PaymentStatus.SUCCESS.getCode());
+        Payment p = baseMapper.selectOne(w);
+        if (p != null) {
+            p.setStatus(status);
+            baseMapper.updateById(p);
+            log.info("根据订单号更新支付状态: orderNo={}, status={}", orderNo, status);
         }
     }
 }

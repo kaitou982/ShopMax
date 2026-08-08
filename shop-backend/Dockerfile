@@ -45,9 +45,17 @@ RUN apk add --no-cache tzdata && \
 # 添加 curl 用于健康检查
 RUN apk add --no-cache curl
 
+# JVM 优化参数
+ENV JAVA_OPTS="-XX:+UseContainerSupport \
+  -XX:MaxRAMPercentage=75.0 \
+  -XX:InitialRAMPercentage=50.0 \
+  -XX:+UseG1GC \
+  -XX:+UseStringDeduplication \
+  -Djava.security.egd=file:/dev/./urandom"
+
 ARG MODULE=shop-gateway
 COPY --from=builder /app/${MODULE}/target/*.jar app.jar
 
 EXPOSE 8080
 
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]

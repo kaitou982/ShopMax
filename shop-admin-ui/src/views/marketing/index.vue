@@ -5,7 +5,7 @@ import type { FormInstance } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/modules/user'
 import { nextTick } from 'vue'
-import * as echarts from 'echarts'
+import echarts from '@/utils/echarts'
 import {
   getCouponList, createCoupon, updateCoupon, deleteCoupon,
   getPromotionList, createPromotion, updatePromotion, deletePromotion, enablePromotion, disablePromotion,

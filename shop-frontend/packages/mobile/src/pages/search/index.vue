@@ -332,6 +332,7 @@ const goBack = () => uni.navigateBack()
 }
 
 .result-scroll { flex: 1; padding: 16rpx; }
+:deep(.uni-scroll-view) { border: none; outline: none; }
 
 .grid { display: flex; flex-wrap: wrap; gap: 10rpx; }
 .card { width: calc(50% - 5rpx); background: #fff; border-radius: 16rpx; overflow: hidden; }

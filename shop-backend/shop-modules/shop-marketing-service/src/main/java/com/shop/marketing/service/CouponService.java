@@ -33,4 +33,19 @@ public interface CouponService extends IService<Coupon> {
     Map<String, Object> getStats(Long couponId);
 
     List<Map<String, Object>> getTrend(Long couponId);
+
+    /**
+     * 使用优惠券（内部接口）
+     */
+    void useCoupon(Long id, Long userId, Long orderId, String orderNo);
+
+    /**
+     * 获取优惠券详情（内部接口）
+     */
+    Map<String, Object> getCouponDetail(Long id, Long userId);
+
+    /**
+     * 退还优惠券（内部接口）
+     */
+    void restoreCoupon(Long id, Long userId);
 }

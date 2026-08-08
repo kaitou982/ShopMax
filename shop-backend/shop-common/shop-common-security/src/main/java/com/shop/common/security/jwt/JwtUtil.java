@@ -29,10 +29,16 @@ public class JwtUtil {
     private String secret;
 
     /**
-     * Token有效期（毫秒）- 默认7天
+     * AccessToken有效期（毫秒）- 默认1天
      */
-    @Value("${jwt.expiration:604800000}")
+    @Value("${jwt.expiration:86400000}")
     private Long expiration;
+
+    /**
+     * RefreshToken有效期（毫秒）- 默认7天
+     */
+    @Value("${jwt.refresh-expiration:604800000}")
+    private Long refreshExpiration;
 
     /**
      * 获取签名密钥
@@ -80,6 +86,43 @@ public class JwtUtil {
         claims.put("username", username);
         claims.put("userType", userType);
         return createToken(claims);
+    }
+
+    /**
+     * 生成RefreshToken
+     *
+     * @param userId   用户ID
+     * @param username 用户名
+     * @return RefreshToken字符串
+     */
+    public String generateRefreshToken(Long userId, String username) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("userId", userId);
+        claims.put("username", username);
+        claims.put("type", "refresh");
+        Date now = new Date();
+        Date expirationDate = new Date(now.getTime() + refreshExpiration);
+        return Jwts.builder()
+                .claims(claims)
+                .issuedAt(now)
+                .expiration(expirationDate)
+                .signWith(getSigningKey(), Jwts.SIG.HS256)
+                .compact();
+    }
+
+    /**
+     * 判断是否为RefreshToken
+     *
+     * @param token Token字符串
+     * @return 是否为RefreshToken
+     */
+    public boolean isRefreshToken(String token) {
+        try {
+            Claims claims = parseToken(token);
+            return "refresh".equals(claims.get("type"));
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     /**

@@ -81,19 +81,13 @@
             <version>1.0.0-SNAPSHOT</version>
         </dependency>
 
-        <!-- 社区服务（复用数据访问层） -->
         <dependency>
             <groupId>com.shop</groupId>
-            <artifactId>shop-community-service</artifactId>
+            <artifactId>shop-common-feign</artifactId>
             <version>1.0.0-SNAPSHOT</version>
         </dependency>
 
-        <!-- 支付服务（退款审核复用） -->
-        <dependency>
-            <groupId>com.shop</groupId>
-            <artifactId>shop-payment-service</artifactId>
-            <version>1.0.0-SNAPSHOT</version>
-        </dependency>
+        <!-- 支付服务和社区服务已通过 Feign 解耦，不再直接依赖 jar 包 -->
     </dependencies>
 
     <build>

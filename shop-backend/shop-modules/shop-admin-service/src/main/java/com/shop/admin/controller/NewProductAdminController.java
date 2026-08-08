@@ -1,10 +1,11 @@
 package com.shop.admin.controller;
 
-import com.shop.admin.mapper.NewProductMapper;
+import com.shop.common.feign.client.InternalProductClient;
 import com.shop.common.web.Result;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,6 +19,7 @@ import java.util.Map;
  * @author shop
  * @since 2026-06-17
  */
+@Slf4j
 @Tag(name = "新品管理")
 @RestController
 @RequestMapping("/api/v1/admin/products")
@@ -25,7 +27,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class NewProductAdminController {
 
-    private final NewProductMapper newProductMapper;
+    private final InternalProductClient internalProductClient;
 
     @Operation(summary = "新品分页列表")
     @GetMapping("/new")
@@ -33,20 +35,15 @@ public class NewProductAdminController {
             @RequestParam(defaultValue = "1") Integer pageNum,
             @RequestParam(defaultValue = "10") Integer pageSize,
             @RequestParam(required = false) Long categoryId) {
-        int offset = (pageNum - 1) * pageSize;
-        List<Map<String, Object>> records;
-        int total;
-        if (categoryId != null) {
-            records = newProductMapper.selectNewProductPageByCategory(categoryId, offset, pageSize);
-            total = newProductMapper.countNewProductsByCategory(categoryId);
-        } else {
-            records = newProductMapper.selectNewProductPage(offset, pageSize);
-            total = newProductMapper.countNewProducts();
+        log.info("查询新品列表: pageNum={}, pageSize={}, categoryId={}", pageNum, pageSize, categoryId);
+        try {
+            Result<Map<String, Object>> result = internalProductClient.getNewProductPage(pageNum, pageSize, categoryId);
+            log.info("查询新品列表成功: code={}", result.getCode());
+            return result;
+        } catch (Exception e) {
+            log.error("查询新品列表失败", e);
+            return Result.error("查询新品列表失败: " + e.getMessage());
         }
-        Map<String, Object> result = new HashMap<>();
-        result.put("records", records);
-        result.put("total", total);
-        return Result.success(result);
     }
 
     @Operation(summary = "批量标记新品")
@@ -56,8 +53,9 @@ public class NewProductAdminController {
         if (ids == null || ids.isEmpty()) {
             return Result.badRequest("请选择商品");
         }
-        newProductMapper.batchMarkNew(ids);
-        return Result.success();
+        Map<String, Object> request = new HashMap<>();
+        request.put("ids", ids);
+        return internalProductClient.batchMarkNew(request);
     }
 
     @Operation(summary = "批量取消新品")
@@ -67,28 +65,20 @@ public class NewProductAdminController {
         if (ids == null || ids.isEmpty()) {
             return Result.badRequest("请选择商品");
         }
-        newProductMapper.batchUnmarkNew(ids);
-        return Result.success();
+        Map<String, Object> request = new HashMap<>();
+        request.put("ids", ids);
+        return internalProductClient.batchUnmarkNew(request);
     }
 
     @Operation(summary = "更新新品设置")
     @PutMapping("/{id}/new-settings")
     public Result<Void> updateNewSettings(@PathVariable Long id, @RequestBody Map<String, Object> body) {
-        Integer sort = body.get("sort") != null ? ((Number) body.get("sort")).intValue() : 0;
-        String startTime = (String) body.get("startTime");
-        String endTime = (String) body.get("endTime");
-        newProductMapper.updateNewProductSettings(id, sort, startTime, endTime);
-        return Result.success();
+        return internalProductClient.updateNewProductSettings(id, body);
     }
 
     @Operation(summary = "新品统计")
     @GetMapping("/new/stats")
     public Result<Map<String, Object>> getStats() {
-        Map<String, Object> stats = new HashMap<>();
-        stats.put("total", newProductMapper.countNewProducts());
-        stats.put("active", newProductMapper.countActiveNewProducts());
-        stats.put("expiring", newProductMapper.countExpiringNewProducts());
-        stats.put("todayNew", newProductMapper.countTodayNewProducts());
-        return Result.success(stats);
+        return internalProductClient.getNewProductStats();
     }
 }

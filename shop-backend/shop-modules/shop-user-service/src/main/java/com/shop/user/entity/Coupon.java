@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
 @Data
 @TableName("mms_coupon")
 public class Coupon {
-    @TableId(type = IdType.AUTO)
+    @TableId(type = IdType.ASSIGN_ID)
     private Long id;
     private String name;
     private Integer type;

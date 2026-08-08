@@ -129,6 +129,7 @@ watch(total, () => { totalPages.value = Math.ceil(total.value / pageSize.value) 
 
 <template>
   <div class="search-page">
+    <button class="back-btn" @click="router.back()">← 返回</button>
     <!-- 左侧筛选面板 -->
     <aside class="filter-panel">
       <div class="filter-section">
@@ -229,6 +230,7 @@ watch(total, () => { totalPages.value = Math.ceil(total.value / pageSize.value) 
 </template>
 
 <style scoped lang="scss">
+.back-btn { display: inline-block; padding: 6px 14px; border: 1px solid #ddd; border-radius: 6px; background: #fff; font-size: 13px; cursor: pointer; margin-bottom: 12px; color: #666; &:hover { border-color: $brand-orange; color: $brand-orange; } }
 .search-page {
   display: flex; gap: 24px; min-height: 600px;
 }

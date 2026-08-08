@@ -25,20 +25,43 @@ request.interceptors.request.use(
   (error) => Promise.reject(error)
 )
 
+// 转换分页字段为数字类型（后端 Long 序列化为 String）
+const convertPageResult = (data: unknown): unknown => {
+  if (data && typeof data === 'object' && !Array.isArray(data)) {
+    const obj = data as Record<string, unknown>
+    if ('records' in obj && 'total' in obj) {
+      return {
+        ...obj,
+        total: Number(obj.total),
+        pages: Number(obj.pages),
+        pageNum: Number(obj.pageNum || obj.current),
+        pageSize: Number(obj.pageSize || obj.size),
+      }
+    }
+  }
+  return data
+}
+
+// 401 处理：仅在已登录状态下才提示；未登录时 401 是正常行为，静默处理
+const handleUnauthorized = () => {
+  const userStore = useUserStore()
+  if (userStore.isLoggedIn) {
+    userStore.logout()
+    router.push('/login').catch(err => {
+      console.error('跳转到登录页失败:', err)
+    })
+    ElMessage.error('登录已过期，请重新登录')
+  }
+}
+
 request.interceptors.response.use(
   (response) => {
     const { code, message, data } = response.data
     if (code === 200) {
-      return data
+      return convertPageResult(data)
     }
     if (code === 401) {
-      const userStore = useUserStore()
-      userStore.logout()
-      router.push('/login').catch(err => {
-          // 这里可以记录跳转失败的日志，或做降级处理
-          console.error('跳转到登录页失败:', err)
-      })
-      ElMessage.error('登录已过期，请重新登录')
+      handleUnauthorized()
     } else {
       ElMessage.error(message || '请求失败')
     }
@@ -48,12 +71,7 @@ request.interceptors.response.use(
     if (error.response) {
       const { status, data } = error.response
       if (status === 401) {
-        const userStore = useUserStore()
-        userStore.logout()
-        router.push('/login').catch(err => {
-            console.error('跳转到登录页失败:', err)
-        })
-        ElMessage.error('登录已过期，请重新登录')
+        handleUnauthorized()
         return Promise.reject(error)
       }
       if (status === 403) {

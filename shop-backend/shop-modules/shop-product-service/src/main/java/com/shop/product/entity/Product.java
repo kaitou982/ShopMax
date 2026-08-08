@@ -19,7 +19,7 @@ public class Product implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    @TableId(type = IdType.AUTO)
+    @TableId(type = IdType.ASSIGN_ID)
     private Long id;
 
     /**
@@ -96,6 +96,21 @@ public class Product implements Serializable {
      * 是否新品: 0-否 1-是
      */
     private Integer isNew;
+
+    /**
+     * 新品排序权重（数值越大越靠前）
+     */
+    private Integer newProductSort;
+
+    /**
+     * 新品上架时间（为空则永久展示）
+     */
+    private LocalDateTime newProductStartTime;
+
+    /**
+     * 新品下架时间（为空则不自动过期）
+     */
+    private LocalDateTime newProductEndTime;
 
     /**
      * 排序

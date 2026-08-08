@@ -112,7 +112,6 @@ const initMapData = () => {
       latitude: logistics.value.senderLatitude,
       longitude: logistics.value.senderLongitude,
       title: logistics.value.senderAddress || '发件地',
-      iconPath: '/static/icons/marker-start.png',
       width: 30,
       height: 30,
       callout: {
@@ -135,7 +134,6 @@ const initMapData = () => {
       latitude: logistics.value.receiverLatitude,
       longitude: logistics.value.receiverLongitude,
       title: logistics.value.receiverAddress || '收件地',
-      iconPath: '/static/icons/marker-end.png',
       width: 30,
       height: 30,
       callout: {
@@ -164,11 +162,6 @@ const initMapData = () => {
         latitude: trace.latitude,
         longitude: trace.longitude,
         title: trace.location,
-        iconPath: isLast
-          ? '/static/icons/marker-end.png'
-          : isFirst
-          ? '/static/icons/marker-start.png'
-          : '/static/icons/marker-middle.png',
         width: 24,
         height: 24,
         callout: {

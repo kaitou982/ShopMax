@@ -13,11 +13,12 @@ import com.shop.marketing.entity.CouponReceive;
 import com.shop.marketing.mapper.CouponMapper;
 import com.shop.marketing.mapper.CouponReceiveMapper;
 import com.shop.marketing.service.CouponService;
+import com.shop.common.feign.client.InternalUserClient;
+import com.shop.common.web.Result;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.dao.DuplicateKeyException;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,7 +34,7 @@ public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> impleme
 
     private final CouponMapper couponMapper;
     private final CouponReceiveMapper couponReceiveMapper;
-    private final JdbcTemplate jdbcTemplate;
+    private final InternalUserClient internalUserClient;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -159,16 +160,18 @@ public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> impleme
             throw new BusinessException("优惠券已被兑换完");
         }
 
-        // Check user integral
-        String sql = "SELECT integral FROM ums_user WHERE id = ? AND deleted = 0";
-        Integer integral = jdbcTemplate.queryForObject(sql, Integer.class, userId);
+        // Check user integral via Feign
+        Result<Integer> integralResult = internalUserClient.getIntegral(userId);
+        Integer integral = integralResult.getData();
         if (integral == null || integral < coupon.getIntegralCost()) {
             throw new BusinessException("积分不足");
         }
 
-        // Deduct integral
-        jdbcTemplate.update("UPDATE ums_user SET integral = integral - ? WHERE id = ?",
-                coupon.getIntegralCost(), userId);
+        // Deduct integral via Feign
+        Map<String, Object> deductReq = new HashMap<>();
+        deductReq.put("amount", coupon.getIntegralCost());
+        deductReq.put("description", "积分兑换优惠券");
+        internalUserClient.deductIntegral(userId, deductReq);
 
         // Create receive record
         CouponReceive receive = new CouponReceive();
@@ -179,9 +182,11 @@ public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> impleme
         try {
             couponReceiveMapper.insert(receive);
         } catch (DuplicateKeyException e) {
-            // Rollback integral deduction
-            jdbcTemplate.update("UPDATE ums_user SET integral = integral + ? WHERE id = ?",
-                    coupon.getIntegralCost(), userId);
+            // Rollback integral deduction via Feign
+            Map<String, Object> addReq = new HashMap<>();
+            addReq.put("amount", coupon.getIntegralCost());
+            addReq.put("description", "优惠券兑换失败退还积分");
+            internalUserClient.addIntegral(userId, addReq);
             throw new BusinessException("已兑换该优惠券");
         }
 
@@ -260,6 +265,35 @@ public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> impleme
                     return item;
                 })
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void useCoupon(Long id, Long userId, Long orderId, String orderNo) {
+        int updated = couponReceiveMapper.useCoupon(id, userId, orderId, orderNo);
+        if (updated == 0) {
+            throw new BusinessException("优惠券不存在或已被使用");
+        }
+        log.info("使用优惠券: id={}, userId={}, orderId={}", id, userId, orderId);
+    }
+
+    @Override
+    public Map<String, Object> getCouponDetail(Long id, Long userId) {
+        Map<String, Object> detail = couponReceiveMapper.selectCouponDetail(id, userId);
+        if (detail == null) {
+            throw new BusinessException("优惠券不存在");
+        }
+        return detail;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void restoreCoupon(Long id, Long userId) {
+        int updated = couponReceiveMapper.restoreCoupon(id, userId);
+        if (updated == 0) {
+            throw new BusinessException("优惠券不存在或状态不正确");
+        }
+        log.info("退还优惠券: id={}, userId={}", id, userId);
     }
 
     private CouponResponse convertToResponse(Coupon coupon) {

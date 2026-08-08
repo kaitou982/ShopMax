@@ -12,7 +12,7 @@ import Hls from 'hls.js'
 defineOptions({ name: 'LivePlayer' })
 
 interface Props {
-  roomId: number
+  roomId: string | number
   flvUrl?: string
   hlsUrl?: string
   autoplay?: boolean
@@ -32,19 +32,33 @@ const maxReconnect = 3
 let player: mpegts.Player | Hls | null = null
 
 const initPlayer = () => {
-  if (!videoRef.value) return
+  console.log('[LivePlayer] initPlayer called', {
+    videoRef: !!videoRef.value,
+    flvUrl: props.flvUrl,
+    hlsUrl: props.hlsUrl,
+    flvSupported: mpegts.isSupported(),
+    hlsSupported: Hls.isSupported()
+  })
+
+  if (!videoRef.value) {
+    console.warn('[LivePlayer] videoRef not ready')
+    return
+  }
 
   // 优先使用 HTTP-FLV (低延迟)
   if (props.flvUrl && mpegts.isSupported()) {
+    console.log('[LivePlayer] Using FLV player')
     initFlvPlayer()
   } else if (props.hlsUrl && Hls.isSupported()) {
+    console.log('[LivePlayer] Using HLS player')
     initHlsPlayer()
   } else if (props.hlsUrl && videoRef.value.canPlayType('application/vnd.apple.mpegurl')) {
     // Safari 原生支持 HLS
+    console.log('[LivePlayer] Using native HLS (Safari)')
     initNativeHls()
   } else {
     playerState.value = 'error'
-    console.error('浏览器不支持 FLV 或 HLS')
+    console.error('[LivePlayer] 浏览器不支持 FLV 或 HLS')
   }
 }
 
@@ -154,14 +168,20 @@ const toggleFullscreen = () => {
   }
 }
 
-watch(() => props.flvUrl, () => {
-  destroyPlayer()
-  reconnectCount.value = 0
-  initPlayer()
+// 监听 flvUrl 或 hlsUrl 变化，重新初始化播放器
+watch(() => [props.flvUrl, props.hlsUrl], ([newFlv, newHls], [oldFlv, oldHls]) => {
+  if (newFlv !== oldFlv || newHls !== oldHls) {
+    console.log('[LivePlayer] URL changed, reinit player')
+    destroyPlayer()
+    reconnectCount.value = 0
+    initPlayer()
+  }
 })
 
 onMounted(() => {
-  initPlayer()
+  console.log('[LivePlayer] onMounted, flvUrl:', props.flvUrl, 'hlsUrl:', props.hlsUrl)
+  // 延迟初始化，确保 DOM 完全渲染
+  setTimeout(() => initPlayer(), 100)
 })
 
 onUnmounted(() => {

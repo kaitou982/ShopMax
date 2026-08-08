@@ -12,8 +12,8 @@ spring:
       - com.baomidou.mybatisplus.autoconfigure.MybatisPlusAutoConfiguration
   cloud:
     nacos:
-      username: nacos
-      password: nacos
+      username: ${NACOS_USERNAME:nacos}
+      password: ${NACOS_PASSWORD:nacos}
       discovery:
         enabled: true
         server-addr: localhost:8848
@@ -24,18 +24,19 @@ spring:
         dashboard: localhost:8858
         port: 8719
     gateway:
+      # 全局 HTTP 客户端超时（Reactor Netty），防止下游服务卡死时连接堆积
+      httpclient:
+        connect-timeout: 3000
+        response-timeout: 15s
       # 全局 CORS 配置
       globalcors:
         cors-configurations:
           '[/**]':
-            allowedOrigins:
-              - "http://localhost:3000"
-              - "http://localhost:3100"
-              - "http://localhost:3200"
-              - "http://localhost:5173"
-              - "http://localhost:5174"
-              - "http://localhost:8080"
-              - "http://localhost:8081"
+            allowedOriginPatterns:
+              - "http://localhost:*"
+              - "http://10.*:*"
+              - "http://192.168.*:*"
+              - "http://172.*:*"
             allowedMethods:
               - GET
               - POST
@@ -75,7 +76,7 @@ spring:
         - id: shop-product-service
           uri: lb://shop-product-service
           predicates:
-            - Path=/api/v1/products/**,/api/v1/categories/**,/api/v1/brands/**
+            - Path=/api/v1/products/**,/api/v1/categories/**,/api/v1/brands/**,/api/v1/search/**
         # ==================== 订单服务 ====================
         - id: shop-order-service
           uri: lb://shop-order-service
@@ -127,12 +128,37 @@ spring:
     time-zone: GMT+8
   data:
     redis:
-      host: localhost
-      port: 6379
-      password:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
       database: 0
 
 # ==================== JWT配置 ====================
 jwt:
-  secret: shopmax-secret-key-2026-for-jwt-signing-and-verification
+  secret: ${JWT_SECRET:shopmax-jwt-secret-2026-prod-f8K2mP9vR4xL7qW3aN6b}
   expiration: 86400000
+
+# Actuator 端点配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+
+# 灰度发布配置
+gray:
+  release:
+    enabled: ${GRAY_RELEASE_ENABLED:false}
+    version: ${GRAY_RELEASE_VERSION:gray}
+    percentage: ${GRAY_RELEASE_PERCENTAGE:0}
+    user-ids: ${GRAY_RELEASE_USER_IDS:}
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always

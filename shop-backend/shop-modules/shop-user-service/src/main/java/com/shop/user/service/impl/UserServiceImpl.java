@@ -3,30 +3,39 @@ package com.shop.user.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.shop.common.enums.MemberLevelConstants;
 import com.shop.common.exception.BusinessException;
+import com.shop.common.feign.client.NotificationClient;
 import com.shop.common.security.jwt.JwtUtil;
 import com.shop.common.web.PageResult;
 import com.shop.user.service.EmailService;
 import com.shop.user.service.SmsService;
 import com.shop.user.controller.request.*;
 import com.shop.user.controller.response.*;
+import com.shop.user.entity.BalanceLog;
 import com.shop.user.entity.Coupon;
 import com.shop.user.entity.CouponReceive;
+import com.shop.user.entity.IntegralLog;
 import com.shop.user.entity.User;
 import com.shop.user.enums.StoreStatus;
+import com.shop.user.mapper.BalanceLogMapper;
 import com.shop.user.mapper.CouponMapper;
 import com.shop.user.mapper.CouponReceiveMapper;
+import com.shop.user.mapper.IntegralLogMapper;
 import com.shop.user.mapper.UserMapper;
 import com.shop.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -49,9 +58,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     private final EmailService emailService;
     private final CouponMapper couponMapper;
     private final CouponReceiveMapper couponReceiveMapper;
+    private final IntegralLogMapper integralLogMapper;
+    private final BalanceLogMapper balanceLogMapper;
+
+    @Autowired(required = false)
+    private NotificationClient notificationClient;
 
     // 会员等级名称映射
-    private static final String[] MEMBER_LEVEL_NAMES = {"", "普通会员", "银卡会员", "金卡会员", "钻石会员"};
+    // MEMBER_LEVEL_NAMES 已移至 MemberLevelConstants.LEVEL_NAMES
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -109,32 +123,24 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public UserLoginResponse login(UserLoginRequest request) {
-        // 先按用户名查，查不到再按手机号查，最后按邮箱查
-        User user = userMapper.selectByUsername(request.getUsername());
-        if (user == null) {
-            user = userMapper.selectByPhone(request.getUsername());
-        }
-        if (user == null) {
-            user = userMapper.selectByEmail(request.getUsername());
-        }
+        // 一次查询覆盖用户名/手机号/邮箱，减少数据库往返
+        User user = userMapper.selectByIdentifier(request.getUsername());
         if (user == null) {
             throw new BusinessException("用户名或密码错误");
         }
 
-        // 检查用户状态
         if (user.getStatus() == 0) {
             throw new BusinessException("账号已被禁用");
         }
 
-        // 验证密码（统一使用 BCrypt）
+        // BCrypt 验证（CPU 密集型，不持数据库连接）
         String dbPassword = user.getPassword();
         if (dbPassword == null || !passwordEncoder.matches(request.getPassword(), dbPassword)) {
             throw new BusinessException("用户名或密码错误");
         }
 
-        // 更新登录信息
+        // 更新登录信息（单条 UPDATE，MyBatis-Plus 自带自动提交，无需事务包裹）
         user.setLastLoginTime(LocalDateTime.now());
         user.setLastLoginIp(request.getIp());
         baseMapper.updateById(user);
@@ -467,6 +473,24 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         baseMapper.updateById(user);
 
         log.info("用户申请入驻成功: userId={}, storeName={}", userId, request.getStoreName());
+
+        // 通知管理员有新的入驻申请
+        try {
+            if (notificationClient != null) {
+                java.util.Map<String, Object> notif = new java.util.HashMap<>();
+                notif.put("type", 2);
+                notif.put("title", "新的入驻申请");
+                notif.put("content", "用户 " + (user.getNickname() != null ? user.getNickname() : user.getUsername()) + " 申请入驻: " + request.getStoreName());
+                notif.put("refId", userId);
+                notif.put("refType", "store_apply");
+                var result = notificationClient.createNotification(notif);
+                log.info("入驻申请通知发送成功: {}", result);
+            } else {
+                log.warn("NotificationClient 为 null，跳过通知");
+            }
+        } catch (Exception e) {
+            log.error("发送入驻申请通知失败: {}", e.getMessage(), e);
+        }
     }
 
     @Override
@@ -528,7 +552,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         UserLoginResponse response = new UserLoginResponse();
         BeanUtils.copyProperties(user, response);
         response.setUserId(user.getId());
-        response.setMemberLevelName(MEMBER_LEVEL_NAMES[user.getMemberLevel()]);
+        response.setMemberLevelName(MemberLevelConstants.getLevelName(user.getMemberLevel() != null ? user.getMemberLevel() : 1));
 
         // 生成JWT Token
         String token = jwtUtil.generateToken(user.getId(), user.getUsername(), user.getRole());
@@ -541,7 +565,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         UserInfoResponse response = new UserInfoResponse();
         BeanUtils.copyProperties(user, response);
         response.setUserId(user.getId());
-        response.setMemberLevelName(MEMBER_LEVEL_NAMES[user.getMemberLevel()]);
+        response.setMemberLevelName(MemberLevelConstants.getLevelName(user.getMemberLevel() != null ? user.getMemberLevel() : 1));
         return response;
     }
 
@@ -647,6 +671,205 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         baseMapper.updateById(user);
 
         log.info("用户重置密码成功: email={}", request.getEmail());
+    }
+
+    @Override
+    public Integer getMemberLevel(Long userId) {
+        User user = getUserEntityById(userId);
+        return user.getMemberLevel() != null ? user.getMemberLevel() : 1;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void deductIntegral(Long userId, Integer amount, String description) {
+        if (amount == null || amount <= 0) {
+            throw new BusinessException("扣减积分数量必须大于0");
+        }
+        User user = getUserEntityById(userId);
+        Integer currentIntegral = user.getIntegral() != null ? user.getIntegral() : 0;
+        if (currentIntegral < amount) {
+            throw new BusinessException("积分不足");
+        }
+
+        user.setIntegral(currentIntegral - amount);
+        baseMapper.updateById(user);
+
+        // 写入积分日志
+        IntegralLog logEntry = new IntegralLog();
+        logEntry.setUserId(userId);
+        logEntry.setChangeAmount(-amount);
+        logEntry.setAfterAmount(user.getIntegral());
+        logEntry.setType(5);
+        logEntry.setRemark(description);
+        integralLogMapper.insert(logEntry);
+
+        log.info("扣减积分成功: userId={}, amount={}, description={}", userId, amount, description);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void addIntegral(Long userId, Integer amount, String description) {
+        if (amount == null || amount <= 0) {
+            throw new BusinessException("增加积分数量必须大于0");
+        }
+        User user = getUserEntityById(userId);
+        Integer currentIntegral = user.getIntegral() != null ? user.getIntegral() : 0;
+
+        user.setIntegral(currentIntegral + amount);
+        baseMapper.updateById(user);
+
+        // 写入积分日志
+        IntegralLog logEntry = new IntegralLog();
+        logEntry.setUserId(userId);
+        logEntry.setChangeAmount(amount);
+        logEntry.setAfterAmount(user.getIntegral());
+        logEntry.setType(3);
+        logEntry.setRemark(description);
+        integralLogMapper.insert(logEntry);
+
+        log.info("增加积分成功: userId={}, amount={}, description={}", userId, amount, description);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void deductBalance(Long userId, BigDecimal amount, String description) {
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new BusinessException("扣减余额必须大于0");
+        }
+        User user = getUserEntityById(userId);
+        BigDecimal currentBalance = user.getBalance() != null ? user.getBalance() : BigDecimal.ZERO;
+        if (currentBalance.compareTo(amount) < 0) {
+            throw new BusinessException("余额不足");
+        }
+
+        user.setBalance(currentBalance.subtract(amount));
+        baseMapper.updateById(user);
+
+        // 写入余额日志
+        BalanceLog logEntry = new BalanceLog();
+        logEntry.setUserId(userId);
+        logEntry.setChangeAmount(amount.negate());
+        logEntry.setAfterAmount(user.getBalance());
+        logEntry.setType(2);
+        logEntry.setRemark(description);
+        balanceLogMapper.insert(logEntry);
+
+        log.info("扣减余额成功: userId={}, amount={}, description={}", userId, amount, description);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void addBalance(Long userId, BigDecimal amount, String description) {
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new BusinessException("增加余额必须大于0");
+        }
+        User user = getUserEntityById(userId);
+        BigDecimal currentBalance = user.getBalance() != null ? user.getBalance() : BigDecimal.ZERO;
+
+        user.setBalance(currentBalance.add(amount));
+        baseMapper.updateById(user);
+
+        // 写入余额日志
+        BalanceLog logEntry = new BalanceLog();
+        logEntry.setUserId(userId);
+        logEntry.setChangeAmount(amount);
+        logEntry.setAfterAmount(user.getBalance());
+        logEntry.setType(3);
+        logEntry.setRemark(description);
+        balanceLogMapper.insert(logEntry);
+
+        log.info("增加余额成功: userId={}, amount={}, description={}", userId, amount, description);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void addGrowthValue(Long userId, Integer amount) {
+        if (amount == null || amount <= 0) {
+            return;
+        }
+        User user = getUserEntityById(userId);
+        Integer currentGrowth = user.getGrowthValue() != null ? user.getGrowthValue() : 0;
+        int newGrowth = currentGrowth + amount;
+        user.setGrowthValue(newGrowth);
+
+        // 自动升级会员等级
+        int newLevel = MemberLevelConstants.calcLevel(newGrowth);
+        if (user.getMemberLevel() == null || newLevel > user.getMemberLevel()) {
+            user.setMemberLevel(newLevel);
+            log.info("会员等级自动升级: userId={}, newLevel={}, growthValue={}", userId, newLevel, newGrowth);
+        }
+
+        baseMapper.updateById(user);
+        log.info("增加成长值成功: userId={}, amount={}, newGrowth={}", userId, amount, newGrowth);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void refundBalance(Long userId, BigDecimal amount, String description, String bizId) {
+        User user = getUserEntityById(userId);
+        BigDecimal oldBalance = user.getBalance() != null ? user.getBalance() : BigDecimal.ZERO;
+        BigDecimal newBalance = oldBalance.add(amount);
+        user.setBalance(newBalance);
+        baseMapper.updateById(user);
+
+        BalanceLog balanceLog = new BalanceLog();
+        balanceLog.setUserId(userId);
+        balanceLog.setChangeAmount(amount);
+        balanceLog.setAfterAmount(newBalance);
+        balanceLog.setType(3); // 3-退款
+        balanceLog.setBizId(bizId);
+        balanceLog.setRemark(description);
+        balanceLogMapper.insert(balanceLog);
+
+        log.info("退款余额成功: userId={}, amount={}, newBalance={}", userId, amount, newBalance);
+    }
+
+    @Override
+    public Map<String, Object> getRegisterStats() {
+        Map<String, Object> stats = new java.util.HashMap<>();
+        Long todayNew = baseMapper.countTodayNewUsers();
+        Long yesterdayNew = baseMapper.countYesterdayNewUsers();
+        stats.put("today_new_users", todayNew != null ? todayNew : 0L);
+        stats.put("yesterday_new_users", yesterdayNew != null ? yesterdayNew : 0L);
+        return stats;
+    }
+
+    @Override
+    public Integer getIntegral(Long userId) {
+        User user = getUserEntityById(userId);
+        return user.getIntegral() != null ? user.getIntegral() : 0;
+    }
+
+    @Override
+    public Map<String, Object> getUserBasicInfo(Long userId) {
+        User user = getUserEntityById(userId);
+        Map<String, Object> info = new java.util.HashMap<>();
+        info.put("nickname", user.getNickname());
+        info.put("avatar", user.getAvatar());
+        return info;
+    }
+
+    @Override
+    public Map<String, Object> getBatchBasicInfo(List<Long> userIds) {
+        if (userIds == null || userIds.isEmpty()) {
+            return java.util.Map.of();
+        }
+        var users = userMapper.selectBatchIds(userIds);
+        Map<String, Object> result = new java.util.HashMap<>();
+        for (var u : users) {
+            Map<String, Object> info = new java.util.HashMap<>();
+            info.put("nickname", u.getNickname());
+            info.put("avatar", u.getAvatar());
+            result.put(u.getId().toString(), info);
+        }
+        return result;
+    }
+
+    @Override
+    public List<Long> getFollowingUserIds(Long userId) {
+        // 需要查询 ums_user_follow 表
+        // 暂时返回空列表，后续可通过 UserFollowMapper 实现
+        return Collections.emptyList();
     }
 
     private void grantNewUserCoupons(Long userId) {

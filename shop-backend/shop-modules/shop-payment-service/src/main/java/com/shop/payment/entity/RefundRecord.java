@@ -20,7 +20,7 @@ public class RefundRecord implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
 
-    @TableId(type = IdType.AUTO)
+    @TableId(type = IdType.ASSIGN_ID)
     private Long id;
 
     /** 退款单号（幂等键，对应支付宝 out_request_no） */

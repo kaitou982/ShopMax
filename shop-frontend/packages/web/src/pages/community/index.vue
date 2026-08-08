@@ -8,26 +8,32 @@ import { communityApi, type NoteResponse } from '@shop/shared'
 const router = useRouter()
 const notes = ref<NoteResponse[]>([])
 const tab = ref<'recommend' | 'following'>('recommend')
+const loading = ref(false)
 
 const loadNotes = async () => {
-  const res = await communityApi.getNoteList({ pageSize: 20, tab: tab.value })
-  notes.value = ((res as any)?.records || []) as NoteResponse[]
+  loading.value = true
+  try {
+    const res = await communityApi.getNoteList({ pageSize: 20, tab: tab.value })
+    notes.value = ((res as any)?.records || []) as NoteResponse[]
+  } catch { notes.value = [] } finally { loading.value = false }
 }
 
 onMounted(loadNotes)
 
 const goDetail = (id: number) => router.push(`/community/${id}`)
 const toggleLike = async (n: NoteResponse) => {
-  try { await communityApi.toggleLike(n.id); n.isLiked = !n.isLiked; n.likeCount += n.isLiked ? 1 : -1 } catch { /* need login */ }
+  try { const liked = await communityApi.toggleLike(n.id); n.isLiked = liked; n.likeCount += liked ? 1 : -1 } catch { /* need login */ }
 }
 </script>
 <template>
   <div class="cm-page">
     <div class="cm-header">
+      <button class="back-btn" @click="router.back()">← 返回</button>
       <h2>社区</h2>
       <div class="cm-tabs"><span :class="{ active: tab === 'recommend' }" @click="tab='recommend';loadNotes()">推荐</span><span :class="{ active: tab === 'following' }" @click="tab='following';loadNotes()">关注</span></div>
     </div>
-    <div class="cm-grid">
+    <div v-if="loading" class="loading">加载中...</div>
+    <div class="cm-grid" v-else>
       <div class="cm-card" v-for="n in notes" :key="n.id" @click="goDetail(n.id)">
         <div class="cm-card-header"><img :src="n.userAvatar || '/api/v1/files/default/product'" class="cm-avatar" /><span>{{ n.userNickname }}</span></div>
         <img :src="n.coverUrl || n.images?.[0]" class="cm-cover" v-if="n.coverUrl || n.images?.length" />
@@ -47,6 +53,8 @@ const toggleLike = async (n: NoteResponse) => {
   </div>
 </template>
 <style scoped lang="scss">
+.back-btn { display: inline-block; padding: 6px 14px; border: 1px solid #ddd; border-radius: 6px; background: #fff; font-size: 13px; cursor: pointer; color: #666; margin-right: 12px; &:hover { border-color: $brand-orange; color: $brand-orange; } }
+.loading { text-align: center; padding: 80px 0; color: #999; }
 .cm-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; h2 { margin: 0; } }
 .cm-tabs { display: flex; gap: 20px; span { font-size: 14px; color: #666; cursor: pointer; &.active { color: $brand-orange; font-weight: 600; } } }
 .cm-grid { columns: 3; column-gap: 16px; @media (max-width: 1024px) { columns: 2; } @media (max-width: 640px) { columns: 1; } }

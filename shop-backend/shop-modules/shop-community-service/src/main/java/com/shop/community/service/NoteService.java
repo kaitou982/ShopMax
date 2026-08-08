@@ -16,7 +16,7 @@ public interface NoteService extends IService<Note> {
 
     void delete(Long userId, Long noteId);
 
-    NoteDetailResponse getDetail(Long noteId);
+    NoteDetailResponse getDetail(Long noteId, Long currentUserId);
 
     PageResult<NoteResponse> page(Integer pageNum, Integer pageSize, String tab, Long currentUserId);
 

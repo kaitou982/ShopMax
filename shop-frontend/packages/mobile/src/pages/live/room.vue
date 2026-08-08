@@ -4,13 +4,18 @@
  */
 defineOptions({ name: 'LiveRoomPage' })
 
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { onLoad, onUnload } from '@dcloudio/uni-app'
 import { liveRoomApi } from '@shop/shared'
 import type { LiveRoom, LiveProduct, Gift } from '@shop/shared'
 import { BASE_URL } from '@/http'
 
-const roomId = ref(0)
+// H5 平台下导入 hls.js
+// #ifdef H5
+import Hls from 'hls.js'
+// #endif
+
+const roomId = ref('')
 const room = ref<LiveRoom | null>(null)
 const products = ref<LiveProduct[]>([])
 const gifts = ref<Gift[]>([])
@@ -31,42 +36,187 @@ let reconnectCount = 0
 const maxReconnect = 3
 
 // 拉流地址（HLS）
-const LIVE_BASE = BASE_URL.replace(':8080', ':8085')
+const LIVE_BASE = import.meta.env.VITE_LIVE_URL || BASE_URL.replace(':8080', ':8085')
 const hlsUrl = computed(() => {
-  if (!room.value) return ''
+  if (!room.value || !roomId.value) return ''
   return `${LIVE_BASE}/live/${roomId.value}.m3u8`
 })
 
+// 视频播放错误处理
+const videoError = ref(false)
+const handleVideoError = (e: any) => {
+  console.error('视频播放错误:', e?.target?.error || e)
+  console.error('视频源:', hlsUrl.value)
+  videoError.value = true
+}
+
+// H5 平台下的 HLS 播放器
+let hlsPlayer: any = null
+const videoRef = ref()
+
+// #ifdef H5
+// 获取原生 video 元素（uni-app H5模式下 ref 可能不是原生元素）
+const getVideoElement = (): HTMLVideoElement | null => {
+  // 直接通过 ID 获取
+  const byId = document.getElementById('live-video')
+  if (byId?.tagName === 'VIDEO') return byId as HTMLVideoElement
+
+  // 通过 ref 获取
+  const ref = videoRef.value
+  if (ref) {
+    // 如果是原生 video
+    if (ref.tagName === 'VIDEO') return ref as HTMLVideoElement
+    // 如果是 uni-app 组件，查找内部 video
+    const inner = ref.$el?.querySelector?.('video') || ref.querySelector?.('video')
+    if (inner) return inner
+  }
+
+  // 最后尝试 querySelector
+  return document.querySelector('#live-video') as HTMLVideoElement
+}
+
+const initHlsPlayer = () => {
+  const videoEl = getVideoElement()
+
+  console.log('[HLS] initHlsPlayer', {
+    hasHls: !!Hls,
+    hasVideo: !!videoEl,
+    videoTag: videoEl?.tagName,
+    url: hlsUrl.value
+  })
+
+  if (!videoEl || videoEl.tagName !== 'VIDEO') {
+    console.log('[HLS] Video element not ready, retry in 500ms')
+    setTimeout(() => initHlsPlayer(), 500)
+    return
+  }
+
+  if (!hlsUrl.value) {
+    console.log('[HLS] No URL, skip')
+    return
+  }
+
+  // 检查是否已经初始化
+  if (hlsPlayer) {
+    console.log('[HLS] Player already exists, skip')
+    return
+  }
+
+  try {
+    if (Hls.isSupported()) {
+      console.log('[HLS] Creating HLS player for:', hlsUrl.value)
+      hlsPlayer = new Hls({
+        debug: false, // 减少日志输出
+        enableWorker: true,
+        lowLatencyMode: true,
+      })
+
+      hlsPlayer.loadSource(hlsUrl.value)
+      hlsPlayer.attachMedia(videoEl)
+
+      hlsPlayer.on(Hls.Events.MANIFEST_PARSED, () => {
+        console.log('[HLS] Manifest parsed, attempting play')
+        videoEl.play().catch((err: any) => {
+          console.warn('[HLS] Autoplay blocked (normal):', err.message)
+        })
+      })
+
+      hlsPlayer.on(Hls.Events.ERROR, (_event: string, data: any) => {
+        // 直播场景中，TS分片 404 和缓冲区错误是正常的，自动恢复即可
+        if (data.fatal) {
+          console.warn('[HLS] Fatal error, recovering:', data.type)
+          switch (data.type) {
+            case Hls.ErrorTypes.NETWORK_ERROR:
+              hlsPlayer?.startLoad()
+              break
+            case Hls.ErrorTypes.MEDIA_ERROR:
+              hlsPlayer?.recoverMediaError()
+              break
+            default:
+              // 其他错误也尝试恢复
+              hlsPlayer?.recoverMediaError()
+              break
+          }
+        }
+      })
+
+      console.log('[HLS] Player created successfully')
+    } else if (videoEl.canPlayType('application/vnd.apple.mpegurl')) {
+      console.log('[HLS] Using native HLS support (Safari)')
+      videoEl.src = hlsUrl.value
+      videoEl.play().catch(() => {})
+    } else {
+      console.error('[HLS] Not supported')
+      videoError.value = true
+    }
+  } catch (err) {
+    console.warn('[HLS] Init warning (non-fatal):', err)
+    // 不设置 videoError，因为播放器可能仍然工作
+  }
+}
+
+const destroyHlsPlayer = () => {
+  if (hlsPlayer) {
+    try {
+      hlsPlayer.destroy()
+    } catch (e) {
+      console.warn('[HLS] Destroy error (ignored):', e)
+    }
+    hlsPlayer = null
+  }
+}
+// #endif
+
+// 调试信息
+const debugInfo = computed(() => ({
+  roomId: roomId.value,
+  roomLoaded: !!room.value,
+  hlsUrl: hlsUrl.value,
+  videoError: videoError.value,
+  liveBase: LIVE_BASE,
+}))
+
 // 连接 WebSocket
 const connectWebSocket = () => {
+  if (!roomId.value) return
+
   const token = uni.getStorageSync('token')
-  ws = uni.connectSocket({
+  const socketTask = uni.connectSocket({
     url: `${BASE_URL.replace('http', 'ws')}/ws/live/${roomId.value}`,
     header: {
       Authorization: token ? `Bearer ${token}` : '',
     },
+    complete: () => {},
   })
 
-  ws.onOpen(() => {
+  // uni.connectSocket 返回 SocketTask，但类型定义可能不完整
+  ws = socketTask as unknown as UniApp.SocketTask
+
+  // 使用可选链安全调用，兼容不同平台
+  ws?.onOpen?.(() => {
     reconnectCount = 0
+    console.log('[LiveSocket] 连接成功')
   })
 
-  ws.onMessage((res) => {
+  ws?.onMessage?.((res) => {
     try {
       const msg = JSON.parse(res.data as string)
       messages.value.push(msg)
 
-      if (msg.type === 'online') {
-        onlineCount.value = msg.data.count
+      if (msg.type === 'online' && msg.data?.count != null) {
+        onlineCount.value = Number(msg.data.count) || 0
       }
     } catch { /* ignore malformed messages */ }
   })
 
-  ws.onClose(() => {
+  ws?.onClose?.(() => {
+    console.log('[LiveSocket] 连接关闭')
     attemptReconnect()
   })
 
-  ws.onError(() => { /* connection error, will attempt reconnect */ })
+  ws?.onError?.((err) => {
+    console.error('[LiveSocket] 连接错误:', err)
+  })
 }
 
 const attemptReconnect = () => {
@@ -83,7 +233,7 @@ const disconnectWebSocket = () => {
     reconnectTimer = null
   }
   if (ws) {
-    ws.close()
+    ws.close({})
     ws = null
   }
 }
@@ -145,29 +295,116 @@ const loadData = async () => {
 }
 
 onLoad((opts?: any) => {
-  roomId.value = Number(opts?.id)
+  const id = opts?.id
+  if (!id) {
+    uni.showToast({ title: '直播间ID无效', icon: 'none' })
+    setTimeout(() => uni.navigateBack(), 1500)
+    return
+  }
+  roomId.value = String(id)
   loadData()
   connectWebSocket()
 })
 
+// H5 平台下监听并初始化播放器
+// #ifdef H5
+const startHlsPlayer = () => {
+  if (!hlsUrl.value) return
+  console.log('[HLS] Starting player, url:', hlsUrl.value)
+  // 先销毁再初始化
+  if (hlsPlayer) {
+    destroyHlsPlayer()
+    nextTick(() => {
+      setTimeout(() => initHlsPlayer(), 300)
+    })
+  } else {
+    nextTick(() => {
+      setTimeout(() => initHlsPlayer(), 200)
+    })
+  }
+}
+
+watch(hlsUrl, (newUrl) => {
+  if (newUrl) startHlsPlayer()
+})
+// #endif
+
+onMounted(() => {
+  // #ifdef H5
+  console.log('[HLS] onMounted, waiting for room data...')
+  watch(() => room.value, (newRoom) => {
+    if (newRoom) {
+      console.log('[HLS] Room loaded')
+      startHlsPlayer()
+    }
+  }, { immediate: true })
+  // #endif
+})
+
 onUnload(() => {
   disconnectWebSocket()
+  // #ifdef H5
+  destroyHlsPlayer()
+  // #endif
 })
 </script>
 
 <template>
   <view class="live-room">
-    <!-- 视频播放器 -->
-    <video
-      :src="hlsUrl"
-      :poster="room?.cover"
-      :autoplay="true"
-      :muted="true"
-      :controls="false"
-      object-fit="contain"
-      class="live-room__video"
-      @error="() => {}"
-    />
+    <!-- 调试信息（开发环境） -->
+    <!-- #ifdef H5 -->
+    <view v-if="false" class="debug-info">
+      <text>roomId: {{ debugInfo.roomId }}</text>
+      <text>roomLoaded: {{ debugInfo.roomLoaded }}</text>
+      <text>hlsUrl: {{ debugInfo.hlsUrl }}</text>
+      <text>videoError: {{ debugInfo.videoError }}</text>
+    </view>
+    <!-- #endif -->
+
+    <!-- 视频播放器或占位 -->
+    <block v-if="hlsUrl && !videoError">
+      <!-- H5 平台：使用原生 video + hls.js -->
+      <!-- #ifdef H5 -->
+      <div class="live-room__video-wrapper">
+        <video
+          id="live-video"
+          ref="videoRef"
+          :poster="room?.cover"
+          muted
+          controls
+          playsinline
+          webkit-playsinline
+          class="live-room__video"
+        ></video>
+      </div>
+      <!-- #endif -->
+
+      <!-- 非 H5 平台：使用 uni-app video 组件 -->
+      <!-- #ifndef H5 -->
+      <video
+        :src="hlsUrl"
+        :poster="room?.cover"
+        :autoplay="true"
+        :muted="true"
+        :controls="true"
+        object-fit="contain"
+        class="live-room__video"
+        @error="handleVideoError"
+      />
+      <!-- #endif -->
+    </block>
+
+    <!-- 视频加载失败或无流时的占位 -->
+    <view v-else class="live-room__video-placeholder">
+      <image v-if="room?.cover" :src="room.cover" class="live-room__cover" mode="aspectFill" />
+      <view class="live-room__no-stream">
+        <uni-icons type="videocam" size="48" color="#666" />
+        <text>{{ videoError ? '视频加载失败' : '等待开播...' }}</text>
+        <!-- #ifdef H5 -->
+        <text v-if="hlsUrl" class="live-room__debug-url">{{ hlsUrl }}</text>
+        <!-- #endif -->
+      </view>
+    </view>
 
     <!-- 顶部信息栏 -->
     <view class="live-room__header">
@@ -330,9 +567,58 @@ onUnload(() => {
   background: #000;
   overflow: hidden;
 
+  &__video-wrapper {
+    width: 100%;
+    height: 100%;
+    position: relative;
+
+    video {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+  }
+
   &__video {
     width: 100%;
     height: 100%;
+  }
+
+  &__video-placeholder {
+    width: 100%;
+    height: 100%;
+    position: relative;
+  }
+
+  &__cover {
+    width: 100%;
+    height: 100%;
+    filter: blur(20px);
+    transform: scale(1.1);
+  }
+
+  &__no-stream {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16rpx;
+    background: rgba(0, 0, 0, 0.6);
+
+    text {
+      font-size: 28rpx;
+      color: #999;
+    }
+  }
+
+  &__debug-url {
+    font-size: 20rpx;
+    color: #666;
+    word-break: break-all;
+    max-width: 80%;
+    text-align: center;
   }
 
   &__header {

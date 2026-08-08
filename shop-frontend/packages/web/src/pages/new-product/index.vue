@@ -66,6 +66,7 @@ onMounted(() => {
 
 <template>
   <div class="new-product-page">
+    <button class="back-btn" @click="router.back()">← 返回</button>
     <h1 class="page-title">新品首发</h1>
 
     <!-- Banner 轮播 -->
@@ -123,6 +124,7 @@ onMounted(() => {
 </template>
 
 <style scoped lang="scss">
+.back-btn { display: inline-block; padding: 6px 14px; border: 1px solid #ddd; border-radius: 6px; background: #fff; font-size: 13px; cursor: pointer; margin-bottom: 12px; color: #666; &:hover { border-color: $brand-orange; color: $brand-orange; } }
 .new-product-page { max-width: 100%; }
 
 .page-title {

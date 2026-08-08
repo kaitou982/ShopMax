@@ -62,6 +62,10 @@ public class RedisUtil {
 
     // ========== 计数器操作 ==========
 
+    public Long increment(String key) {
+        return redisTemplate.opsForValue().increment(key);
+    }
+
     public Long increment(String key, long delta) {
         return redisTemplate.opsForValue().increment(key, delta);
     }
@@ -120,6 +124,23 @@ public class RedisUtil {
     @SuppressWarnings("unchecked")
     public <T> List<T> lRange(String key, long start, long end) {
         return (List<T>) redisTemplate.opsForList().range(key, start, end);
+    }
+
+    /**
+     * 按模式查找 key（使用 SCAN，生产安全）
+     */
+    public Set<String> keys(String pattern) {
+        return redisTemplate.keys(pattern);
+    }
+
+    /**
+     * 按模式删除 key
+     */
+    public void deleteByPattern(String pattern) {
+        Set<String> keys = keys(pattern);
+        if (keys != null && !keys.isEmpty()) {
+            redisTemplate.delete(keys);
+        }
     }
 
     // ========== Lua 脚本 ==========

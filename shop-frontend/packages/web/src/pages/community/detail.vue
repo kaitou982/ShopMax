@@ -15,6 +15,25 @@ const comments = ref<CommentResponse[]>([])
 const commentText = ref('')
 const replyTo = ref<{ id: number; nickname: string } | null>(null)
 const submitting = ref(false)
+const expandedReplies = ref<Set<number>>(new Set())
+
+const formatTime = (t: string) => {
+  if (!t) return ''
+  const d = new Date(t)
+  const now = Date.now()
+  const diff = now - d.getTime()
+  if (diff < 60_000) return '刚刚'
+  if (diff < 3_600_000) return Math.floor(diff / 60_000) + '分钟前'
+  if (diff < 86_400_000) return Math.floor(diff / 3_600_000) + '小时前'
+  if (diff < 604_800_000) return Math.floor(diff / 86_400_000) + '天前'
+  return t.slice(0, 10)
+}
+
+const toggleReplies = (id: number) => {
+  const s = new Set(expandedReplies.value)
+  if (s.has(id)) s.delete(id); else s.add(id)
+  expandedReplies.value = s
+}
 
 onMounted(async () => {
   try {
@@ -28,18 +47,18 @@ onMounted(async () => {
 const toggleLike = async () => {
   if (!note.value) return
   try {
-    await communityApi.toggleLike(note.value.id)
-    note.value.isLiked = !note.value.isLiked
-    note.value.likeCount += note.value.isLiked ? 1 : -1
+    const liked = await communityApi.toggleLike(note.value.id)
+    note.value.isLiked = liked
+    note.value.likeCount += liked ? 1 : -1
   } catch { /* noop */ }
 }
 
 const toggleFavorite = async () => {
   if (!note.value) return
   try {
-    await communityApi.toggleFavorite(note.value.id)
-    note.value.isFavorited = !note.value.isFavorited
-    note.value.favoriteCount += note.value.isFavorited ? 1 : -1
+    const faved = await communityApi.toggleFavorite(note.value.id)
+    note.value.isFavorited = faved
+    note.value.favoriteCount += faved ? 1 : -1
   } catch { /* noop */ }
 }
 
@@ -150,17 +169,41 @@ const reply = (c: CommentResponse) => {
         <!-- 评论列表 -->
         <div class="nd-comment-list" v-if="comments.length">
           <div class="nd-cm" v-for="c in comments" :key="c.id">
-            <img :src="c.userAvatar || '/default-avatar.svg'" class="nd-cm-avatar" @error="$event.target.src='/default-avatar.svg'" />
+            <img :src="c.userAvatar || '/default-avatar.svg'" class="nd-cm-avatar" @error="($event.target as HTMLImageElement).src='/default-avatar.svg'" />
             <div class="nd-cm-body">
               <div class="nd-cm-hd">
-                <strong>{{ c.userNickname }}</strong>
-                <span class="nd-cm-time">{{ c.createTime?.slice(0, 16).replace('T', ' ') }}</span>
+                <strong class="nd-cm-name">{{ c.userNickname }}</strong>
+                <span class="nd-cm-time">{{ formatTime(c.createTime) }}</span>
               </div>
               <p class="nd-cm-text">
-                <span v-if="c.replyToUserNickname" class="nd-cm-reply">回复 @{{ c.replyToUserNickname }}：</span>
+                <span v-if="c.replyToUserNickname" class="nd-cm-reply">回复 @{{ c.replyToUserNickname }}</span>
                 {{ c.content }}
               </p>
               <button class="nd-cm-reply-btn" @click="reply(c)">回复</button>
+
+              <!-- 子评论（折叠区） -->
+              <div class="nd-cm-children" v-if="c.children?.length">
+                <button class="nd-expand-btn" v-if="!expandedReplies.has(c.id)" @click="toggleReplies(c.id)">
+                  展开 {{ c.children.length }} 条回复 ▼
+                </button>
+                <template v-if="expandedReplies.has(c.id)">
+                  <div class="nd-cm nd-cm-child" v-for="child in c.children" :key="child.id">
+                    <img :src="child.userAvatar || '/default-avatar.svg'" class="nd-cm-avatar nd-cm-avatar-sm" @error="($event.target as HTMLImageElement).src='/default-avatar.svg'" />
+                    <div class="nd-cm-body">
+                      <div class="nd-cm-hd">
+                        <strong class="nd-cm-name">{{ child.userNickname }}</strong>
+                        <span class="nd-cm-time">{{ formatTime(child.createTime) }}</span>
+                      </div>
+                      <p class="nd-cm-text">
+                        <span v-if="child.replyToUserNickname" class="nd-cm-reply">回复 @{{ child.replyToUserNickname }}</span>
+                        {{ child.content }}
+                      </p>
+                      <button class="nd-cm-reply-btn" @click="reply(child)">回复</button>
+                    </div>
+                  </div>
+                  <button class="nd-expand-btn nd-expand-collapse" @click="toggleReplies(c.id)">收起回复 ▲</button>
+                </template>
+              </div>
             </div>
           </div>
         </div>
@@ -280,32 +323,54 @@ const reply = (c: CommentResponse) => {
 .nd-cm {
   display: flex; gap: $spacing-md; padding: $spacing-md 0;
   border-bottom: 1px solid $border-light;
+  align-items: flex-start;
   &:last-child { border-bottom: none; }
 }
 
 .nd-cm-avatar {
-  width: 36px; height: 36px; border-radius: 50%; object-fit: cover; flex-shrink: 0;
+  width: 36px; height: 36px; border-radius: 50%; object-fit: cover; flex-shrink: 0; margin-top: 2px;
 }
+.nd-cm-avatar-sm { width: 28px; height: 28px; }
 
 .nd-cm-body { flex: 1; min-width: 0; }
 
 .nd-cm-hd {
-  display: flex; align-items: center; gap: $spacing-sm; margin-bottom: 4px;
-  strong { font-size: $font-size-sm; }
+  display: flex; align-items: baseline; gap: $spacing-sm; margin-bottom: 6px;
 }
+.nd-cm-name { font-size: $font-size-sm; color: $text-secondary; }
 
 .nd-cm-time { font-size: $font-size-xs; color: $text-hint; }
 
 .nd-cm-text {
-  font-size: $font-size-base; margin: 0 0 6px; line-height: 1.6;
+  font-size: $font-size-base; margin: 0 0 8px; line-height: 1.65; color: $text-primary;
 }
 
-.nd-cm-reply { color: $brand-orange; }
+.nd-cm-reply { color: $brand-orange; margin-right: 4px; }
 
 .nd-cm-reply-btn {
   border: none; background: none; color: $text-hint; font-size: $font-size-xs;
-  cursor: pointer; padding: 0; &:hover { color: $text-secondary; }
+  cursor: pointer; padding: 0; margin-bottom: 4px;
+  &:hover { color: $text-secondary; }
 }
+
+// ── 子评论折叠区 ──
+.nd-cm-children {
+  margin-top: 4px; padding: 0; border-radius: $radius-base; overflow: hidden;
+}
+
+.nd-cm-child {
+  border-bottom: none; padding: $spacing-sm 0 $spacing-sm $spacing-sm;
+  margin-left: 0; background: $bg-page;
+  &:not(:last-child) { border-bottom: 1px dashed $border-light; }
+}
+
+.nd-expand-btn {
+  border: none; background: none; color: $text-hint; font-size: $font-size-xs;
+  cursor: pointer; padding: 6px 0; display: block;
+  &:hover { color: $brand-orange; }
+}
+
+.nd-expand-collapse { margin-top: 0; }
 
 .nd-no-cm { text-align: center; padding: 40px 0; color: $text-hint; font-size: $font-size-sm; }
 </style>

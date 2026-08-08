@@ -24,6 +24,7 @@ onMounted(async () => {
 </script>
 <template>
   <div class="lv-page">
+    <button class="back-btn" @click="router.back()">← 返回</button>
     <h2>直播</h2>
     <div class="lv-grid" v-if="!loading">
       <div class="lv-card" v-for="r in rooms" :key="r.id" @click="router.push(`/live/${r.id}`)">
@@ -49,6 +50,7 @@ onMounted(async () => {
   </div>
 </template>
 <style scoped lang="scss">
+.back-btn { display: inline-block; padding: 6px 14px; border: 1px solid #ddd; border-radius: 6px; background: #fff; font-size: 13px; cursor: pointer; margin-bottom: 12px; color: #666; &:hover { border-color: $brand-orange; color: $brand-orange; } }
 h2 { margin-bottom: 20px; }
 .lv-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; @media (max-width: 1024px) { grid-template-columns: repeat(3, 1fr); } @media (max-width: 640px) { grid-template-columns: repeat(2, 1fr); } }
 .lv-card { background: #fff; border-radius: 16px; overflow: hidden; transition: all .15s; cursor: pointer; &:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,.08); } }

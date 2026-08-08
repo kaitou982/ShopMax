@@ -102,6 +102,16 @@ public class ProductController {
         return Result.success(productService.listNew(limit));
     }
 
+    @Operation(summary = "新品分页列表（C端，带时间过滤）")
+    @GetMapping("/new-page")
+    public Result<PageResult<Product>> pageNew(
+            @RequestParam(defaultValue = "1") Integer pageNum,
+            @RequestParam(defaultValue = "20") Integer pageSize,
+            @RequestParam(required = false) Long categoryId,
+            @RequestParam(required = false) String sortBy) {
+        return Result.success(productService.pageNew(pageNum, pageSize, categoryId, sortBy));
+    }
+
     // ==================== 商品评价 ====================
 
     @Operation(summary = "创建商品评价")
