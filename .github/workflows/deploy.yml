@@ -5,28 +5,21 @@ on:
     branches: [main]
 
 jobs:
-  # ==================== 前端自动部署到 Vercel ====================
-  # Vercel 会自动检测 push 并部署，此 job 仅用于状态展示
+  # Vercel 前端自动部署（Vercel 自动检测 push）
   deploy-vercel:
     runs-on: ubuntu-latest
     steps:
-      - name: Trigger Vercel Deploy
-        run: |
-          echo "Vercel 已自动检测到 main 分支 push，正在部署..."
-          echo "Web 前端: https://shopmax.vercel.app"
-          echo "Admin 后台: https://shopmax-admin.vercel.app"
-          echo "移动端 H5: https://shopmax-m.vercel.app"
+      - run: |
+          echo "✅ Vercel 正在自动部署前端..."
+          echo "Web: https://shop-max-kr9t.vercel.app"
+          echo "移动端: https://shop-max-kiqm.vercel.app"
+          echo "Admin: https://shop-max-mujl.vercel.app"
 
-  # ==================== 后端部署到 VPS ====================
+  # 后端部署到阿里云 VPS
   deploy-backend:
     runs-on: ubuntu-latest
-    # 如果你还没有 VPS，暂时跳过此步骤
-    if: false
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Deploy to VPS via SSH
+      - name: Deploy via SSH
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.VPS_HOST }}
@@ -36,4 +29,4 @@ jobs:
             cd /opt/shopmax
             git pull origin main
             docker compose -f docker-compose.prod.yml up -d --build
-            docker system prune -f
+            docker image prune -f
