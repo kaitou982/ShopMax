@@ -31,21 +31,17 @@ RUN mvn dependency:go-offline -B
 # 复制源码并构建
 COPY . .
 ARG MODULE=shop-gateway
-RUN mvn package -pl ${MODULE} -am -DskipTests -B
+ARG MVN_MODULE=shop-gateway
+RUN mvn package -pl ${MVN_MODULE} -am -DskipTests -B
 
 # 运行阶段
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 
-# 添加时区支持
-RUN apk add --no-cache tzdata && \
+RUN apk add --no-cache tzdata curl && \
     cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && \
     echo "Asia/Shanghai" > /etc/timezone
 
-# 添加 curl 用于健康检查
-RUN apk add --no-cache curl
-
-# JVM 优化参数
 ENV JAVA_OPTS="-XX:+UseContainerSupport \
   -XX:MaxRAMPercentage=75.0 \
   -XX:InitialRAMPercentage=50.0 \

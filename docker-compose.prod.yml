@@ -145,6 +145,7 @@ services:
       context: ./shop-backend
       args:
         MODULE: shop-gateway
+        MVN_MODULE: shop-gateway
     container_name: shopmax-gateway
     ports:
       - "8080:8080"
@@ -180,6 +181,7 @@ services:
       context: ./shop-backend
       args:
         MODULE: shop-auth
+        MVN_MODULE: shop-auth
     container_name: shopmax-auth
     environment:
       SPRING_PROFILES_ACTIVE: prod
@@ -213,6 +215,7 @@ services:
       context: ./shop-backend
       args:
         MODULE: shop-user-service
+        MVN_MODULE: shop-modules/shop-user-service
     container_name: shopmax-user
     environment:
       SPRING_PROFILES_ACTIVE: prod
@@ -241,6 +244,7 @@ services:
       context: ./shop-backend
       args:
         MODULE: shop-product-service
+        MVN_MODULE: shop-modules/shop-product-service
     container_name: shopmax-product
     environment:
       SPRING_PROFILES_ACTIVE: prod
@@ -272,6 +276,7 @@ services:
       context: ./shop-backend
       args:
         MODULE: shop-order-service
+        MVN_MODULE: shop-modules/shop-order-service
     container_name: shopmax-order
     environment:
       SPRING_PROFILES_ACTIVE: prod
@@ -300,6 +305,7 @@ services:
       context: ./shop-backend
       args:
         MODULE: shop-payment-service
+        MVN_MODULE: shop-modules/shop-payment-service
     container_name: shopmax-payment
     environment:
       SPRING_PROFILES_ACTIVE: prod
@@ -330,6 +336,7 @@ services:
       context: ./shop-backend
       args:
         MODULE: shop-marketing-service
+        MVN_MODULE: shop-modules/shop-marketing-service
     container_name: shopmax-marketing
     environment:
       SPRING_PROFILES_ACTIVE: prod
@@ -358,6 +365,7 @@ services:
       context: ./shop-backend
       args:
         MODULE: shop-community-service
+        MVN_MODULE: shop-modules/shop-community-service
     container_name: shopmax-community
     environment:
       SPRING_PROFILES_ACTIVE: prod
@@ -386,6 +394,7 @@ services:
       context: ./shop-backend
       args:
         MODULE: shop-live-service
+        MVN_MODULE: shop-modules/shop-live-service
     container_name: shopmax-live
     environment:
       SPRING_PROFILES_ACTIVE: prod
@@ -414,6 +423,7 @@ services:
       context: ./shop-backend
       args:
         MODULE: shop-admin-service
+        MVN_MODULE: shop-modules/shop-admin-service
     container_name: shopmax-admin-svc
     environment:
       SPRING_PROFILES_ACTIVE: prod
@@ -442,6 +452,7 @@ services:
       context: ./shop-backend
       args:
         MODULE: shop-file-service
+        MVN_MODULE: shop-modules/shop-file-service
     container_name: shopmax-file
     environment:
       SPRING_PROFILES_ACTIVE: prod
@@ -474,6 +485,7 @@ services:
       context: ./shop-backend
       args:
         MODULE: shop-customer-service
+        MVN_MODULE: shop-modules/shop-customer-service
     container_name: shopmax-customer
     environment:
       SPRING_PROFILES_ACTIVE: prod
