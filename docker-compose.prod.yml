@@ -1,43 +1,28 @@
 # ============================================================
-# ShopMax 生产环境配置
-# 部署命令: docker compose -f docker-compose.prod.yml up -d
-# 前置条件:
-#   1. 复制 .env.example 为 .env 并填入真实值
-#   2. 在 VPS 上安装 Docker + Docker Compose
+# ShopMax 生产环境 - 精简版（适配 2核4G ECS）
+# 部署: docker compose -f docker-compose.prod.yml up -d --build
 # ============================================================
 
 services:
-  # ==================== 反向代理 (Nginx) ====================
   nginx:
     image: nginx:alpine
     container_name: shopmax-nginx
     ports:
       - "80:80"
-      - "443:443"
     volumes:
       - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./docker/nginx/ssl:/etc/nginx/ssl:ro
     depends_on:
       shop-gateway:
         condition: service_healthy
     networks:
       - shopmax-net
     restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          memory: 64M
-          cpus: '0.25'
 
-  # ==================== MySQL ====================
   mysql:
     image: mysql:8.0
     container_name: shopmax-mysql
-    ports:
-      - "3306:3306"
     environment:
       MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
-      MYSQL_DATABASE: shopmax
       MYSQL_CHARACTER_SET_SERVER: utf8mb4
       MYSQL_COLLATION_SERVER: utf8mb4_unicode_ci
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --default-authentication-plugin=mysql_native_password
@@ -55,16 +40,12 @@ services:
     deploy:
       resources:
         limits:
-          memory: 512M
-          cpus: '0.5'
+          memory: 384M
 
-  # ==================== Redis ====================
   redis:
     image: redis:7-alpine
     container_name: shopmax-redis
-    ports:
-      - "6379:6379"
-    command: redis-server --appendonly yes --maxmemory 128mb --maxmemory-policy allkeys-lru
+    command: redis-server --appendonly yes --maxmemory 64mb --maxmemory-policy allkeys-lru
     volumes:
       - ./data/redis:/data
     healthcheck:
@@ -75,50 +56,33 @@ services:
     networks:
       - shopmax-net
     restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          memory: 128M
-          cpus: '0.25'
 
-  # ==================== Nacos (注册中心 + 配置中心) ====================
   nacos:
     image: nacos/nacos-server:v2.4.3
     container_name: shopmax-nacos
-    ports:
-      - "8848:8848"
     environment:
       MODE: standalone
       SPRING_DATASOURCE_PLATFORM: ""
-      JVM_XMS: 256m
+      JVM_XMS: 128m
       JVM_XMX: 256m
-      NACOS_AUTH_ENABLE: "true"
-      NACOS_AUTH_TOKEN: ${NACOS_AUTH_TOKEN:-U2hvcE1heC1OYWNvcy1BdXRoLVRva2VuLTIwMjYtRm9yLURldmVsb3BtZW50}
-      NACOS_AUTH_IDENTITY_KEY: serverIdentity
-      NACOS_AUTH_IDENTITY_VALUE: shopmax-security
     volumes:
       - ./data/nacos/logs:/home/nacos/logs
-      - ./data/nacos/data:/home/nacos/data
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8848/nacos/actuator/health"]
-      interval: 15s
-      timeout: 5s
-      retries: 5
+      interval: 20s
+      timeout: 10s
+      retries: 8
     networks:
       - shopmax-net
     restart: unless-stopped
     deploy:
       resources:
         limits:
-          memory: 512M
-          cpus: '0.5'
+          memory: 384M
 
-  # ==================== MinIO (文件存储) ====================
   minio:
     image: minio/minio:latest
     container_name: shopmax-minio
-    ports:
-      - "9000:9000"
     environment:
       MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-minioadmin}
       MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-minioadmin123}
@@ -127,19 +91,14 @@ services:
       - ./data/minio:/data
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
-      interval: 10s
+      interval: 15s
       timeout: 5s
       retries: 5
     networks:
       - shopmax-net
     restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          memory: 256M
-          cpus: '0.25'
 
-  # ==================== 后端微服务 ====================
+  # ==================== 核心微服务（只保留4个）====================
   shop-gateway:
     build:
       context: ./shop-backend
@@ -152,63 +111,20 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: prod
       DB_PASSWORD: ${DB_PASSWORD}
-      REDIS_PASSWORD: ${REDIS_PASSWORD}
       NACOS_SERVER_ADDR: nacos:8848
       JWT_SECRET: ${JWT_SECRET}
-    depends_on:
-      nacos:
-        condition: service_healthy
-      mysql:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
-      interval: 15s
-      timeout: 5s
-      retries: 5
-    networks:
-      - shopmax-net
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          memory: 256M
-          cpus: '0.5'
-
-  shop-auth:
-    build:
-      context: ./shop-backend
-      args:
-        MODULE: shop-auth
-        MVN_MODULE: shop-auth
-    container_name: shopmax-auth
-    environment:
-      SPRING_PROFILES_ACTIVE: prod
-      DB_PASSWORD: ${DB_PASSWORD}
-      REDIS_PASSWORD: ${REDIS_PASSWORD}
-      NACOS_SERVER_ADDR: nacos:8848
-      JWT_SECRET: ${JWT_SECRET}
-      MAIL_HOST: ${MAIL_HOST}
-      MAIL_PORT: ${MAIL_PORT}
-      MAIL_USERNAME: ${MAIL_USERNAME}
-      MAIL_PASSWORD: ${MAIL_PASSWORD}
+      JAVA_OPTS: "-Xmx192m -Xms128m"
     depends_on:
       nacos:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
-      interval: 15s
+      interval: 20s
       timeout: 5s
-      retries: 5
+      retries: 10
     networks:
       - shopmax-net
     restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          memory: 256M
-          cpus: '0.5'
 
   shop-user:
     build:
@@ -222,22 +138,15 @@ services:
       DB_PASSWORD: ${DB_PASSWORD}
       REDIS_PASSWORD: ${REDIS_PASSWORD}
       NACOS_SERVER_ADDR: nacos:8848
+      JAVA_OPTS: "-Xmx256m -Xms128m"
     depends_on:
       nacos:
         condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
-      interval: 15s
-      timeout: 5s
-      retries: 5
+      mysql:
+        condition: service_healthy
     networks:
       - shopmax-net
     restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          memory: 384M
-          cpus: '0.5'
 
   shop-product:
     build:
@@ -254,111 +163,13 @@ services:
       MINIO_ENDPOINT: http://minio:9000
       MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
       MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin123}
+      JAVA_OPTS: "-Xmx256m -Xms128m"
     depends_on:
       nacos:
         condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
-      interval: 15s
-      timeout: 5s
-      retries: 5
     networks:
       - shopmax-net
     restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          memory: 384M
-          cpus: '0.5'
-
-  shop-order:
-    build:
-      context: ./shop-backend
-      args:
-        MODULE: shop-order-service
-        MVN_MODULE: shop-modules/shop-order-service
-    container_name: shopmax-order
-    environment:
-      SPRING_PROFILES_ACTIVE: prod
-      DB_PASSWORD: ${DB_PASSWORD}
-      REDIS_PASSWORD: ${REDIS_PASSWORD}
-      NACOS_SERVER_ADDR: nacos:8848
-    depends_on:
-      nacos:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
-      interval: 15s
-      timeout: 5s
-      retries: 5
-    networks:
-      - shopmax-net
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          memory: 384M
-          cpus: '0.5'
-
-  shop-payment:
-    build:
-      context: ./shop-backend
-      args:
-        MODULE: shop-payment-service
-        MVN_MODULE: shop-modules/shop-payment-service
-    container_name: shopmax-payment
-    environment:
-      SPRING_PROFILES_ACTIVE: prod
-      DB_PASSWORD: ${DB_PASSWORD}
-      NACOS_SERVER_ADDR: nacos:8848
-      ALIPAY_APP_ID: ${ALIPAY_APP_ID}
-      ALIPAY_PRIVATE_KEY: ${ALIPAY_PRIVATE_KEY}
-      ALIPAY_PUBLIC_KEY: ${ALIPAY_PUBLIC_KEY}
-    depends_on:
-      nacos:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
-      interval: 15s
-      timeout: 5s
-      retries: 5
-    networks:
-      - shopmax-net
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          memory: 256M
-          cpus: '0.25'
-
-  shop-marketing:
-    build:
-      context: ./shop-backend
-      args:
-        MODULE: shop-marketing-service
-        MVN_MODULE: shop-modules/shop-marketing-service
-    container_name: shopmax-marketing
-    environment:
-      SPRING_PROFILES_ACTIVE: prod
-      DB_PASSWORD: ${DB_PASSWORD}
-      REDIS_PASSWORD: ${REDIS_PASSWORD}
-      NACOS_SERVER_ADDR: nacos:8848
-    depends_on:
-      nacos:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
-      interval: 15s
-      timeout: 5s
-      retries: 5
-    networks:
-      - shopmax-net
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          memory: 256M
-          cpus: '0.25'
 
   shop-community:
     build:
@@ -372,141 +183,34 @@ services:
       DB_PASSWORD: ${DB_PASSWORD}
       REDIS_PASSWORD: ${REDIS_PASSWORD}
       NACOS_SERVER_ADDR: nacos:8848
+      JAVA_OPTS: "-Xmx256m -Xms128m"
     depends_on:
       nacos:
         condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
-      interval: 15s
-      timeout: 5s
-      retries: 5
     networks:
       - shopmax-net
     restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          memory: 384M
-          cpus: '0.5'
 
-  shop-live:
+  shop-auth:
     build:
       context: ./shop-backend
       args:
-        MODULE: shop-live-service
-        MVN_MODULE: shop-modules/shop-live-service
-    container_name: shopmax-live
+        MODULE: shop-auth
+        MVN_MODULE: shop-auth
+    container_name: shopmax-auth
     environment:
       SPRING_PROFILES_ACTIVE: prod
       DB_PASSWORD: ${DB_PASSWORD}
       REDIS_PASSWORD: ${REDIS_PASSWORD}
       NACOS_SERVER_ADDR: nacos:8848
+      JWT_SECRET: ${JWT_SECRET}
+      JAVA_OPTS: "-Xmx192m -Xms128m"
     depends_on:
       nacos:
         condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
-      interval: 15s
-      timeout: 5s
-      retries: 5
     networks:
       - shopmax-net
     restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          memory: 256M
-          cpus: '0.25'
-
-  shop-admin:
-    build:
-      context: ./shop-backend
-      args:
-        MODULE: shop-admin-service
-        MVN_MODULE: shop-modules/shop-admin-service
-    container_name: shopmax-admin-svc
-    environment:
-      SPRING_PROFILES_ACTIVE: prod
-      DB_PASSWORD: ${DB_PASSWORD}
-      REDIS_PASSWORD: ${REDIS_PASSWORD}
-      NACOS_SERVER_ADDR: nacos:8848
-    depends_on:
-      nacos:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
-      interval: 15s
-      timeout: 5s
-      retries: 5
-    networks:
-      - shopmax-net
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          memory: 384M
-          cpus: '0.5'
-
-  shop-file:
-    build:
-      context: ./shop-backend
-      args:
-        MODULE: shop-file-service
-        MVN_MODULE: shop-modules/shop-file-service
-    container_name: shopmax-file
-    environment:
-      SPRING_PROFILES_ACTIVE: prod
-      DB_PASSWORD: ${DB_PASSWORD}
-      NACOS_SERVER_ADDR: nacos:8848
-      MINIO_ENDPOINT: http://minio:9000
-      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
-      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin123}
-    depends_on:
-      minio:
-        condition: service_healthy
-      nacos:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
-      interval: 15s
-      timeout: 5s
-      retries: 5
-    networks:
-      - shopmax-net
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          memory: 256M
-          cpus: '0.25'
-
-  shop-customer:
-    build:
-      context: ./shop-backend
-      args:
-        MODULE: shop-customer-service
-        MVN_MODULE: shop-modules/shop-customer-service
-    container_name: shopmax-customer
-    environment:
-      SPRING_PROFILES_ACTIVE: prod
-      DB_PASSWORD: ${DB_PASSWORD}
-      NACOS_SERVER_ADDR: nacos:8848
-    depends_on:
-      nacos:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
-      interval: 15s
-      timeout: 5s
-      retries: 5
-    networks:
-      - shopmax-net
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          memory: 256M
-          cpus: '0.25'
 
 networks:
   shopmax-net:
