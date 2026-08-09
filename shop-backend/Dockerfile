@@ -25,14 +25,19 @@ COPY shop-modules/shop-community-service/pom.xml shop-modules/shop-community-ser
 COPY shop-modules/shop-live-service/pom.xml shop-modules/shop-live-service/
 COPY shop-modules/shop-file-service/pom.xml shop-modules/shop-file-service/
 
-# 下载依赖（利用缓存）
-RUN mvn dependency:go-offline -B
+# 配置阿里云 Maven 镜像加速
+RUN mkdir -p /root/.m2 && \
+    echo '<settings><mirrors><mirror><id>aliyun</id><mirrorOf>central</mirrorOf><name>Aliyun Maven</name><url>https://maven.aliyun.com/repository/public</url></mirror></mirrors></settings>' > /root/.m2/settings.xml
+
+# 下载依赖（利用缓存），限制 JVM 内存避免 OOM
+ENV MAVEN_OPTS="-Xmx1024m -XX:MaxMetaspaceSize=256m"
+RUN mvn dependency:go-offline -B -Dmaven.test.skip=true
 
 # 复制源码并构建
 COPY . .
 ARG MODULE=shop-gateway
 ARG MVN_MODULE=shop-gateway
-RUN mvn package -pl ${MVN_MODULE} -am -DskipTests -B
+RUN mvn package -pl ${MVN_MODULE} -am -DskipTests -B -T 1C
 
 # 运行阶段
 FROM eclipse-temurin:21-jre-alpine
