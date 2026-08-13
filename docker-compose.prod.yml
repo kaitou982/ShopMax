@@ -12,8 +12,7 @@ services:
     volumes:
       - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
     depends_on:
-      shop-gateway:
-        condition: service_healthy
+      - shop-gateway
     networks:
       - shopmax-net
     restart: unless-stopped
@@ -29,18 +28,13 @@ services:
     volumes:
       - ./data/mysql:/var/lib/mysql
       - ./docs/sql:/docker-entrypoint-initdb.d
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
     networks:
       - shopmax-net
     restart: unless-stopped
     deploy:
       resources:
         limits:
-          memory: 384M
+          memory: 512M
 
   redis:
     image: redis:7-alpine
@@ -48,11 +42,6 @@ services:
     command: redis-server --appendonly yes --maxmemory 64mb --maxmemory-policy allkeys-lru
     volumes:
       - ./data/redis:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
     networks:
       - shopmax-net
     restart: unless-stopped
@@ -67,12 +56,6 @@ services:
       JVM_XMX: 256m
     volumes:
       - ./data/nacos/logs:/home/nacos/logs
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8848/nacos/v2/console/health/readiness || exit 1"]
-      interval: 15s
-      timeout: 10s
-      retries: 10
-      start_period: 40s
     networks:
       - shopmax-net
     restart: unless-stopped
@@ -90,16 +73,11 @@ services:
     command: server /data
     volumes:
       - ./data/minio:/data
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
-      interval: 15s
-      timeout: 5s
-      retries: 5
     networks:
       - shopmax-net
     restart: unless-stopped
 
-  # ==================== 核心微服务（只保留4个）====================
+  # ==================== 核心微服务 ====================
   shop-gateway:
     build:
       context: ./shop-backend
@@ -114,15 +92,9 @@ services:
       DB_PASSWORD: ${DB_PASSWORD}
       NACOS_SERVER_ADDR: nacos:8848
       JWT_SECRET: ${JWT_SECRET}
-      JAVA_OPTS: "-Xmx192m -Xms128m"
+      JAVA_OPTS: "-Xmx256m -Xms128m"
     depends_on:
-      nacos:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
-      interval: 20s
-      timeout: 5s
-      retries: 10
+      - nacos
     networks:
       - shopmax-net
     restart: unless-stopped
@@ -139,12 +111,10 @@ services:
       DB_PASSWORD: ${DB_PASSWORD}
       REDIS_PASSWORD: ${REDIS_PASSWORD}
       NACOS_SERVER_ADDR: nacos:8848
-      JAVA_OPTS: "-Xmx256m -Xms128m"
+      JAVA_OPTS: "-Xmx384m -Xms128m"
     depends_on:
-      nacos:
-        condition: service_healthy
-      mysql:
-        condition: service_healthy
+      - nacos
+      - mysql
     networks:
       - shopmax-net
     restart: unless-stopped
@@ -164,10 +134,9 @@ services:
       MINIO_ENDPOINT: http://minio:9000
       MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
       MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin123}
-      JAVA_OPTS: "-Xmx256m -Xms128m"
+      JAVA_OPTS: "-Xmx384m -Xms128m"
     depends_on:
-      nacos:
-        condition: service_healthy
+      - nacos
     networks:
       - shopmax-net
     restart: unless-stopped
@@ -184,10 +153,9 @@ services:
       DB_PASSWORD: ${DB_PASSWORD}
       REDIS_PASSWORD: ${REDIS_PASSWORD}
       NACOS_SERVER_ADDR: nacos:8848
-      JAVA_OPTS: "-Xmx256m -Xms128m"
+      JAVA_OPTS: "-Xmx384m -Xms128m"
     depends_on:
-      nacos:
-        condition: service_healthy
+      - nacos
     networks:
       - shopmax-net
     restart: unless-stopped
@@ -205,10 +173,9 @@ services:
       REDIS_PASSWORD: ${REDIS_PASSWORD}
       NACOS_SERVER_ADDR: nacos:8848
       JWT_SECRET: ${JWT_SECRET}
-      JAVA_OPTS: "-Xmx192m -Xms128m"
+      JAVA_OPTS: "-Xmx256m -Xms128m"
     depends_on:
-      nacos:
-        condition: service_healthy
+      - nacos
     networks:
       - shopmax-net
     restart: unless-stopped
