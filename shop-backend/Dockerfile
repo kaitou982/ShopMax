@@ -54,8 +54,8 @@ ENV JAVA_OPTS="-XX:+UseContainerSupport \
   -XX:+UseStringDeduplication \
   -Djava.security.egd=file:/dev/./urandom"
 
-ARG MODULE=shop-gateway
-COPY --from=builder /app/${MODULE}/target/*.jar app.jar
+ARG MVN_MODULE=shop-gateway
+COPY --from=builder /app/${MVN_MODULE}/target/*.jar app.jar
 
 EXPOSE 8080
 
