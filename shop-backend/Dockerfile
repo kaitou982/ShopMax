@@ -38,6 +38,7 @@ COPY . .
 ARG MODULE=shop-gateway
 ARG MVN_MODULE=shop-gateway
 RUN mvn package -pl ${MVN_MODULE} -am -DskipTests -B -T 1C
+RUN echo "=== target 目录内容 ===" && ls -la /app/${MVN_MODULE}/target/*.jar 2>/dev/null || echo "未找到 JAR"
 
 # 运行阶段
 FROM eclipse-temurin:21-jre-alpine
